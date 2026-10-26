@@ -20,4 +20,4 @@ export const ACCOUNTS = {
 
 export const SHOP_ID = 'quan-la';
 export const FIREBASE_VERSION = '10.12.2';
-export const APP_VERSION = '1.0.19';
+export const APP_VERSION = '1.0.22';

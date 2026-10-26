@@ -87,11 +87,13 @@ export function kitchenText({ tableName, round, items, by, at, cancel = false, r
 export function billText(bill, { draft = false } = {}) {
   const s = store.settings;
   const c = calc(bill);
+  const addr = (s.address && s.address.trim()) ? s.address.trim() : '61k/Xã Hòa Phú, H. Long Hồ, Vĩnh Long';
+  const { phone, owner } = shopContact(s);
+  const phoneDisplay = phone && owner ? `${phone} - ${owner}` : (s.phone || '');
   const lines = [
-    `${s.shopName.toUpperCase()} – ${draft ? 'TẠM TÍNH' : 'HÓA ĐƠN'}`,
-    s.address || '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long',
-    ...(shopContact(s).phone ? [`ĐT: ${shopContact(s).phone}`] : []),
-    ...(shopContact(s).owner ? [`Chủ quán: ${shopContact(s).owner}`] : []),
+    `${s.shopName.toUpperCase()} – ${draft ? 'PHIẾU TÍNH TIỀN' : 'HÓA ĐƠN'}`,
+    addr,
+    ...(phoneDisplay ? [`ĐT: ${phoneDisplay}`] : []),
     `${bill.code ? `Mã: ${bill.code} · ` : ''}${bill.tableName}`,
     `${fmtTime(bill.openedAt)}${bill.closedAt ? ` – ${fmtTime(bill.closedAt)}` : ''} · ${fmtDate(bill.closedAt || Date.now())}`,
     HR,
@@ -139,17 +141,19 @@ export function reportText(r, label) {
 /* ---------- Bản IN 80mm ---------- */
 function shopHeader() {
   const s = store.settings;
+  const addr = (s.address && s.address.trim()) ? s.address.trim() : '61k/Xã Hòa Phú, H. Long Hồ, Vĩnh Long';
   const { phone, owner } = shopContact(s);
+  const phoneDisplay = phone && owner ? `${phone} - ${owner}` : (s.phone || '');
   return `<div class="r-c"><div class="r-shop">${esc(s.shopName.toUpperCase())}</div>
-    ${phone ? `<div>ĐT: ${esc(phone)}</div>` : ''}${owner ? `<div>Chủ quán: ${esc(owner)}</div>` : ''}</div>`;
+    <div>${esc(addr)}</div>
+    ${phoneDisplay ? `<div>ĐT: ${esc(phoneDisplay)}</div>` : ''}</div>`;
 }
 export function billPrintHTML(bill, { draft = false } = {}) {
   const s = store.settings;
   const c = calc(bill);
   const qr = (draft || bill.pay?.method !== 'cash') && s.print.showQR ? vietQR(bill.pay?.method === 'mixed' ? bill.pay.transfer : c.total, qrInfo(bill)) : '';
   return `${shopHeader()}
-  <div class="r-c">${esc(s.address || '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long')}</div>
-  <div class="r-c r-title">${draft ? 'PHIẾU TẠM TÍNH' : 'HÓA ĐƠN THANH TOÁN'}</div>
+  <div class="r-c r-title">${draft ? 'PHIẾU TÍNH TIỀN' : 'HÓA ĐƠN THANH TOÁN'}</div>
   ${bill.code ? `<div class="r-c">Số: ${esc(bill.code)}</div>` : ''}
   <div class="r-hr"></div>
   <div class="r-row"><span>${esc(bill.tableName)}</span><span>${fmtDate(bill.closedAt || Date.now())}</span></div>

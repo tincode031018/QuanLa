@@ -47,8 +47,8 @@ function skeleton() {
         <div class="card"><div class="card-h"><h3>Danh sách món</h3><a class="btn btn-sm btn-soft" href="#/order/${b.tableId}">${icon('plus')} Thêm món</a></div>
           <div class="card-pad pay-items" id="items"></div></div>
         <div class="btn-row wrap">
-          <button class="btn" data-act="printDraft">${icon('print')} In tạm tính</button>
-          <button class="btn" data-act="zaloDraft">${icon('zalo')} Gửi tạm tính</button>
+          <button class="btn" data-act="printDraft">${icon('print')} In tính tiền</button>
+          <button class="btn" data-act="zaloDraft">${icon('zalo')} Gửi tính tiền</button>
         </div>
       </section>
       <section class="stack pay-side">

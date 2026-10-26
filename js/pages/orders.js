@@ -18,20 +18,25 @@ function render() {
       <button class="chip ${filter === 'waiting' ? 'active' : ''}" data-f="waiting">Chờ thanh toán <span class="cnt">${cnt('waiting')}</span></button>
       <button class="chip ${filter === 'open' ? 'active' : ''}" data-f="open">Đang phục vụ <span class="cnt">${cnt('open')}</span></button>
     </div>
-    ${list.length ? `<div class="tgrid" style="grid-template-columns:repeat(auto-fill,minmax(290px,1fr))">${list.map(b => {
+    ${list.length ? `<div class="orders-grid">${list.map(b => {
       const c = calc(b);
       const g = groupItems(c.items);
-      return `<div class="card card-pad stack-sm" style="${b.status === 'waiting' ? 'border-color:var(--accent)' : ''}">
+      return `<div class="card card-pad order-pay-card ${b.status === 'waiting' ? 'waiting' : ''}">
         <div class="row-between"><div class="row"><b style="font-size:17px">${esc(b.tableName)}</b>
           <span class="pill st-${b.status}">${b.status === 'waiting' ? 'Chờ thanh toán' : 'Đang phục vụ'}</span>
           ${isCashier && store.unseen.has(b.id) ? '<span class="pill st-cancelled">Mới</span>' : ''}</div></div>
         <div class="xs muted">Vào ${fmtTime(b.openedAt)} · ${dur(minutesSince(b.openedAt))} · ${esc((b.staff || []).join(', '))}</div>
-        <div class="small" style="min-height:40px">${g.slice(0, 5).map(i => `${i.qty}× ${esc(i.name)}`).join(' · ') || '<span class="muted">Chưa có món</span>'}${g.length > 5 ? ` <span class="muted">+${g.length - 5} món</span>` : ''}</div>
-        <div class="row-between mt"><b class="num" style="font-size:19px">${money(c.total)}</b>
-          <div class="row">
+        <div class="small order-card-items" style="min-height:40px">${g.slice(0, 5).map(i => `${i.qty}× ${esc(i.name)}`).join(' · ') || '<span class="muted">Chưa có món</span>'}${g.length > 5 ? ` <span class="muted">+${g.length - 5} món</span>` : ''}</div>
+        <div class="order-card-foot">
+          <div class="row-between order-card-total">
+            <span class="xs muted">Tổng tiền</span>
+            <b class="num" style="font-size:18px">${money(c.total)}</b>
+          </div>
+          <div class="btn-row order-card-actions">
             <a class="btn btn-sm" href="#/order/${b.tableId}">${icon('plus')} Gọi món</a>
             ${isCashier ? `<a class="btn btn-sm ${b.status === 'waiting' ? 'btn-accent' : 'btn-primary'}" href="#/bill/${b.id}">${icon('cash')} Thanh toán</a>` : ''}
-          </div></div>
+          </div>
+        </div>
       </div>`;
     }).join('')}</div>` : `<div class="card empty">${icon('list')}<div>Không có đơn nào</div></div>`}`;
 }

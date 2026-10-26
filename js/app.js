@@ -9,9 +9,9 @@ import { APP_VERSION } from './config.js';
 
 import login from './pages/login.js';
 import tables from './pages/tables.js';
-import order from './pages/order.js';
-import orders from './pages/orders.js';
-import bill from './pages/cashier.js';
+import order from './pages/order.js?v=1.0.22';
+import orders from './pages/orders.js?v=1.0.22';
+import bill from './pages/cashier.js?v=1.0.22';
 import history from './pages/history.js';
 import reports from './pages/reports.js';
 import admin from './pages/admin.js';

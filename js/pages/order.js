@@ -182,10 +182,10 @@ function openOrderReceipt() {
     return live.length ? `<div class="order-receipt-subhead">Đã gửi bếp · lần ${r.round}</div>${rows(live)}` : '';
   }).join('') : '';
   modal({
-    title: `Bill tạm tính · ${esc(t?.name || '')}`,
+    title: `Phiếu tính tiền · ${esc(t?.name || '')}`,
     body: `<div class="order-receipt">
       <div class="order-receipt-brand">${esc(store.settings.shopName || 'QUÁN LÁ')}</div>
-      <div class="order-receipt-caption">PHIẾU TẠM TÍNH</div>
+      <div class="order-receipt-caption">PHIẾU TÍNH TIỀN</div>
       <div class="order-receipt-rule"></div>
       ${sentRows}
       ${cart.length ? `<div class="order-receipt-subhead">Món mới · chưa gửi bếp</div>${rows(cart)}` : ''}

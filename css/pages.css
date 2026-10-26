@@ -224,6 +224,38 @@
   .cart-bar, .sheet-backdrop, .only-mobile { display: none !important; }
 }
 
+/* --- Danh sách đơn / Hàng đợi thu ngân (#/orders) --- */
+.orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+@media (max-width: 480px) { .orders-grid { grid-template-columns: 1fr; gap: 10px; } }
+.order-pay-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; overflow: hidden; }
+.order-pay-card.waiting { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-50), var(--shadow-sm); }
+.order-card-items { color: var(--muted); line-height: 1.45; }
+.order-card-foot { margin-top: auto; padding-top: 10px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 8px; }
+.order-card-total { display: flex; align-items: baseline; justify-content: space-between; }
+.order-card-actions { width: 100%; min-width: 0; }
+.order-card-actions > .btn { min-width: 0; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: center; }
+
+/* Bảo vệ chống tràn cho bất kỳ phiên bản nào của thẻ đơn */
+.tgrid > .card, .orders-grid > .card, .order-pay-card {
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.tgrid > .card .row-between.mt, .order-pay-footer {
+  flex-wrap: wrap;
+  row-gap: 8px;
+  align-items: center;
+}
+.tgrid > .card .row-between.mt > .row, .order-pay-actions {
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+}
+.tgrid > .card .row-between.mt .btn, .order-pay-actions .btn {
+  white-space: nowrap;
+  max-width: 100%;
+}
+
 /* --- Thanh toán --- */
 .pay-page { padding: 0 0 24px; font-weight: 400; }
 .pay-page h3, .pay-page .ph-title b { font-weight: 550; }
