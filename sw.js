@@ -1,12 +1,12 @@
 // Service worker: lưu sẵn giao diện để mở nhanh & dùng khi mất mạng
-const CACHE = 'quanla-v1.0.3';
+const CACHE = 'quanla-v1.0.19';
 const SHELL = [
   './', 'index.html', 'manifest.json',
   'css/base.css', 'css/layout.css', 'css/components.css', 'css/pages.css',
   'js/app.js', 'js/config.js', 'js/db.js', 'js/store.js', 'js/auth.js', 'js/ui.js', 'js/utils.js',
   'js/bill.js', 'js/zalo.js', 'js/notify.js', 'js/actions.js',
   'js/pages/login.js', 'js/pages/tables.js', 'js/pages/order.js', 'js/pages/orders.js', 'js/pages/cashier.js',
-  'js/pages/history.js', 'js/pages/reports.js', 'js/pages/admin.js', 'js/pages/soldout.js',
+  'js/pages/history.js', 'js/pages/reports.js', 'js/pages/admin.js', 'js/pages/soldout.js', 'js/pages/printer.js',
   'assets/icons/logo.svg', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
 ];
 self.addEventListener('install', e => {

@@ -257,7 +257,7 @@ async function more() {
       done = true;
       await cancelBill(billId, r, store.user.name);
       toast('Đã hủy bill', 'warn');
-      deliver('kitchen', `❌ HỦY BÀN – ${b.tableName.toUpperCase()}\nLý do: ${r}\n👤 ${store.user.name}`, { title: 'Báo bếp hủy bàn' });
+      deliver('kitchen', `HỦY BÀN – ${b.tableName.toUpperCase()}\nLý do: ${r}\n${store.user.name}`, { title: 'Báo bếp hủy bàn' });
       location.hash = '#/tables';
     }
   }

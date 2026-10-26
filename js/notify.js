@@ -36,10 +36,10 @@ export function watchBills() {
         const p = prev[id];
         const fromOther = c.b.lastBy && c.b.lastBy !== me.name;
         if (c.status === 'waiting' && p?.status !== 'waiting' && (c.b.requestedBy !== me.name)) {
-          toast(`💰 ${c.b.tableName} yêu cầu tính tiền`, 'warn', 4000); sound = 'pay'; store.unseen.add(id);
+          toast(`${c.b.tableName} yêu cầu tính tiền`, 'warn', 4000); sound = 'pay'; store.unseen.add(id);
         } else if (c.n > (p?.n || 0) && fromOther) {
           const added = (c.b.items || []).slice(p?.n || 0).reduce((s, i) => s + i.qty, 0);
-          toast(`🍽 ${c.b.tableName}: ${p ? 'gọi thêm' : 'gọi'} ${added} món (${c.b.lastBy})`, 'info', 3500);
+          toast(`${c.b.tableName}: ${p ? 'gọi thêm' : 'gọi'} ${added} món (${c.b.lastBy})`, 'info', 3500);
           sound ||= 'new'; store.unseen.add(id);
         }
       }

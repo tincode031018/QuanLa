@@ -13,6 +13,25 @@ const loadCart = () => { try { cart = JSON.parse(localStorage.getItem(cartKey())
 const saveCart = () => { cart.length ? localStorage.setItem(cartKey(), JSON.stringify(cart)) : localStorage.removeItem(cartKey()); };
 const qtyOf = menuId => cart.filter(c => c.menuId === menuId).reduce((s, c) => s + c.qty, 0);
 
+function animateAddToBill(startRect) {
+  if (!startRect || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  requestAnimationFrame(() => {
+    const target = el.querySelector('#cartBar .cb-count');
+    if (!target) return;
+    const end = target.getBoundingClientRect();
+    const fly = document.createElement('span');
+    fly.className = 'cart-fly-count';
+    fly.textContent = '+1';
+    fly.style.left = `${startRect.left + startRect.width / 2 - 17}px`;
+    fly.style.top = `${startRect.top + startRect.height / 2 - 15}px`;
+    document.body.appendChild(fly);
+    fly.animate([
+      { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+      { transform: `translate(${end.left + end.width / 2 - startRect.left - startRect.width / 2}px, ${end.top + end.height / 2 - startRect.top - startRect.height / 2}px) scale(.35)`, opacity: .25 },
+    ], { duration: 520, easing: 'cubic-bezier(.2,.75,.25,1)' }).onfinish = () => fly.remove();
+  });
+}
+
 function addToCart(menuId, delta = 1) {
   const m = menuById(menuId);
   if (!m) return;
@@ -46,8 +65,8 @@ function skeleton() {
     <section class="menu-pane">
       <div class="pane-head" id="head"></div>
       <div class="menu-tools">
-        <div class="searchbox">${icon('search')}<input class="input" id="q" type="search" placeholder="Tìm món… (gõ không dấu được)" value="${esc(q)}" autocomplete="off"></div>
-        <div class="chips" id="cats"></div>
+        <div class="menu-page-nav" id="cats"></div>
+        <div class="searchbox">${icon('search')}<input class="input" id="q" type="search" placeholder="Tìm trong danh mục này…" value="${esc(q)}" autocomplete="off"></div>
       </div>
       <div id="soldBanner"></div>
       <div class="menu-list" id="menuList"></div>
@@ -71,10 +90,13 @@ function renderHead() {
 
 function renderCats() {
   const cats = el.querySelector('#cats');
-  const scrollLeft = cats.scrollLeft;
-  cats.innerHTML = `<button class="chip ${cat === 'all' ? 'active' : ''}" data-cat="all">Tất cả</button>` +
-    store.categories.map(c => `<button class="chip ${cat === c.id ? 'active' : ''}" data-cat="${c.id}">${esc(c.name)}</button>`).join('');
-  cats.scrollLeft = scrollLeft;
+  const list = store.categories;
+  let index = list.findIndex(c => c.id === cat);
+  if (index < 0 && list.length) { index = 0; cat = list[0].id; }
+  cats.innerHTML = list.length ? `<button class="icon-btn" data-act="pagePrev" aria-label="Danh mục trước" ${index <= 0 ? 'disabled' : ''}>${icon('back')}</button>
+    <div class="menu-page-label"><small>TRANG ${index + 1} / ${list.length}</small><b>${esc(list[index].name)}</b></div>
+    <button class="icon-btn" data-act="pageNext" aria-label="Danh mục tiếp" ${index >= list.length - 1 ? 'disabled' : ''}>${icon('next')}</button>`
+    : `<div class="menu-page-label"><small>THỰC ĐƠN</small><b>Chưa có danh mục</b></div>`;
   el.querySelector('#soldBanner').innerHTML = soldMode
     ? `<div class="notice warn soldmode-banner">${icon('ban')}<div><b>Chế độ báo hết món</b> – chạm vào món để bật/tắt "Hết". <button class="text-brand bold" data-act="soldmode">Xong</button></div></div>` : '';
 }
@@ -86,7 +108,6 @@ function itemHTML(m) {
     <div class="mi-main"><div class="mi-name">${esc(m.name)}</div>
       <div class="mi-price">${m.price > 0 ? money(m.price) : esc(m.priceLabel || 'Chưa có giá')} ${sold ? '<span class="tag-sold">HẾT</span>' : ''}</div>${m.priceNote ? `<small class="muted">${esc(m.priceNote)}</small>` : ''}</div>
     <div class="mi-ctrl">
-      ${qn && !soldMode ? `<button class="sub" data-act="dec" data-id="${m.id}" aria-label="Bớt">${icon('minus')}</button><span class="q">${qn}</span>` : ''}
       ${soldMode ? `<span class="pill ${sold ? 'st-cancelled' : 'st-open'}">${sold ? 'Hết' : 'Còn'}</span>` : `<span class="add" aria-hidden="true">${icon('plus')}</span>`}
     </div></div>`;
 }
@@ -95,14 +116,12 @@ function renderMenu() {
   const list = el.querySelector('#menuList');
   if (!list) return;
   const nq = norm(q);
-  let items = store.menu.filter(m => (cat === 'all' || m.categoryId === cat) && (!nq || norm(m.name).includes(nq)));
-  if (!items.length) { list.innerHTML = `<div class="empty">${icon('search')}Không tìm thấy món</div>`; return; }
-  if (cat === 'all' && !nq) {
-    list.innerHTML = store.categories.map(c => {
-      const its = items.filter(m => m.categoryId === c.id);
-      return its.length ? `<div class="menu-cat-h">${esc(c.name)}</div>${its.map(itemHTML).join('')}` : '';
-    }).join('') + (() => { const rest = items.filter(m => !store.categories.some(c => c.id === m.categoryId)); return rest.length ? `<div class="menu-cat-h">Khác</div>${rest.map(itemHTML).join('')}` : ''; })();
-  } else list.innerHTML = items.map(itemHTML).join('');
+  const items = store.menu.filter(m => (cat === 'all' || m.categoryId === cat) && (!nq || norm(m.name).includes(nq)));
+  if (!items.length) {
+    list.innerHTML = `<div class="empty">${icon('search')}${nq ? 'Không tìm thấy món trong danh mục này' : 'Danh mục chưa có món'}</div>`;
+    return;
+  }
+  list.innerHTML = items.map(itemHTML).join('');
 }
 
 function renderCart() {
@@ -110,6 +129,7 @@ function renderCart() {
   const b = billOfTable(t);
   const sent = b ? calc(b) : { total: 0, count: 0, subtotal: 0 };
   const newTotal = sumItems(cart), newCount = itemCount(cart);
+  const totalCount = sent.count + newCount, totalAmount = sent.subtotal + newTotal;
   const isCashier = store.user.role === 'cashier';
   const pane = el.querySelector('#cartPane');
   pane.innerHTML = `
@@ -143,13 +163,38 @@ function renderCart() {
 
   // Thanh dưới (điện thoại)
   const bar = el.querySelector('#cartBar');
-  if (cart.length) {
-    bar.innerHTML = `<button class="cb-info" data-act="opencart"><span class="cb-count">${newCount}</span><span class="cb-text"><b>${money(newTotal)}</b><small>Xem món mới${b ? ` · đã gửi ${sent.count}` : ''}</small></span></button>
-      <button class="btn btn-primary" data-act="send" ${sending ? 'disabled' : ''}>${icon('send')} Gửi bếp</button>`;
+  if (cart.length || b?.items?.length) {
+    bar.innerHTML = `<button class="cb-info" data-act="opencart"><span class="cb-count">${totalCount}</span><span class="cb-text"><b>${money(totalAmount)}</b><small>Bill tạm tính · chạm để xem món</small></span></button>
+      ${cart.length ? `<button class="btn btn-primary" data-act="send" ${sending ? 'disabled' : ''}>${icon('send')} Gửi bếp</button>` : b.status === 'waiting' ? `<span class="pill st-waiting" style="align-self:center">Chờ TT</span>` : `<button class="btn btn-accent" data-act="pay">Tính tiền</button>`}`;
   } else if (b) {
-    bar.innerHTML = `<button class="cb-info" data-act="opencart"><span class="cb-count" style="background:var(--accent)">${sent.count}</span><span class="cb-text"><b>${money(sent.total)}</b><small>Xem đơn của bàn</small></span></button>
+    bar.innerHTML = `<button class="cb-info" data-act="opencart"><span class="cb-count" style="background:var(--accent)">${sent.count}</span><span class="cb-text"><b>${money(sent.total)}</b><small>Bill tạm tính · chạm để xem món</small></span></button>
       ${b.status === 'waiting' ? `<span class="pill st-waiting" style="align-self:center">Chờ TT</span>` : `<button class="btn btn-accent" data-act="pay" ${b.items?.length ? '' : 'disabled'}>Tính tiền</button>`}`;
   } else bar.innerHTML = `<span class="cb-info"><span class="cb-text"><b>Bàn trống</b><small>Chọn món để mở bàn</small></span></span>`;
+}
+
+function openOrderReceipt() {
+  const t = tableById(tableId), b = billOfTable(t);
+  const sent = b ? calc(b) : { items: [], subtotal: 0, count: 0 };
+  const newCount = itemCount(cart), newTotal = sumItems(cart);
+  const rows = items => items.map(it => `<div class="order-receipt-row"><span class="order-receipt-qty">${it.qty} ×</span><span class="order-receipt-name">${esc(it.name)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span><b>${money(it.qty * it.price)}</b></div>`).join('');
+  const sentRows = b ? rounds(b).map(r => {
+    const live = r.items.filter(it => !it.void);
+    return live.length ? `<div class="order-receipt-subhead">Đã gửi bếp · lần ${r.round}</div>${rows(live)}` : '';
+  }).join('') : '';
+  modal({
+    title: `Bill tạm tính · ${esc(t?.name || '')}`,
+    body: `<div class="order-receipt">
+      <div class="order-receipt-brand">${esc(store.settings.shopName || 'QUÁN LÁ')}</div>
+      <div class="order-receipt-caption">PHIẾU TẠM TÍNH</div>
+      <div class="order-receipt-rule"></div>
+      ${sentRows}
+      ${cart.length ? `<div class="order-receipt-subhead">Món mới · chưa gửi bếp</div>${rows(cart)}` : ''}
+      ${!sent.items.length && !cart.length ? '<div class="muted small">Chưa có món được gọi</div>' : ''}
+      <div class="order-receipt-rule"></div>
+      <div class="order-receipt-total"><span>Tạm tính (${sent.count + newCount} món)</span><b>${money(sent.subtotal + newTotal)}</b></div>
+    </div>`,
+    wide: true,
+  });
 }
 
 function setCartOpen(v) {
@@ -179,7 +224,7 @@ async function pay() {
   if (!b) return;
   if (cart.length && !await confirmBox(`Còn <b>${itemCount(cart)} món chưa gửi bếp</b>. Vẫn yêu cầu tính tiền?`, { okText: 'Vẫn tính tiền' })) return;
   await requestPayment(b.id, store.user.name);
-  toast('Đã báo thu ngân tính tiền 💰');
+  toast('Đã báo thu ngân tính tiền');
   setCartOpen(false);
   if (store.user.role === 'order') location.hash = '#/tables';
 }
@@ -210,19 +255,34 @@ export default {
   focus: true, flush: true,
   async mount(root, [tid]) {
     el = root; tableId = tid; q = ''; soldMode = false; sending = false; cartOpen = false;
-    if (!localStorage.getItem('ql_cat_keep')) cat = 'all';
+    if (!store.categories.some(c => c.id === cat)) cat = store.categories[0]?.id || 'all';
     loadCart();
     skeleton(); renderHead(); renderCats(); renderMenu(); renderCart();
 
     const onClick = async e => {
       const t = e.target.closest('[data-act],[data-cat]');
       if (!t) return;
-      if (t.dataset.cat) { cat = t.dataset.cat; renderCats(); renderMenu(); el.querySelector('.menu-pane').scrollTop = 0; return; }
       const a = t.dataset.act, i = +t.dataset.i;
       switch (a) {
+        case 'pagePrev': case 'pageNext': {
+          const cats = store.categories;
+          const current = cats.findIndex(c => c.id === cat);
+          const next = current + (a === 'pageNext' ? 1 : -1);
+          if (cats[next]) {
+            cat = cats[next].id; q = '';
+            const search = el.querySelector('#q'); if (search) search.value = '';
+            renderCats(); renderMenu(); el.querySelector('.menu-pane').scrollTop = 0;
+          }
+          break;
+        }
         case 'add':
           if (soldMode) { const m = menuById(t.dataset.id); await setAvailable(m.id, m.available === false); toast(`${m.name}: ${m.available === false ? 'Còn món' : 'Đã hết'}`, 'info'); }
-          else addToCart(t.dataset.id, 1);
+          else {
+            const sourceRect = t.querySelector('.add')?.getBoundingClientRect();
+            const before = qtyOf(t.dataset.id);
+            addToCart(t.dataset.id, 1);
+            if (qtyOf(t.dataset.id) > before) animateAddToBill(sourceRect);
+          }
           break;
         case 'dec': e.stopPropagation(); addToCart(t.dataset.id, -1); break;
         case 'cinc': cart[i].qty++; saveCart(); renderCart(); renderMenu(); break;
@@ -233,7 +293,7 @@ export default {
         case 'pay': pay(); break;
         case 'reopen': { const b = billOfTable(tableById(tableId)); await reopenBill(b.id); toast('Đã mở lại đơn để gọi thêm'); break; }
         case 'move': move(); break;
-        case 'opencart': setCartOpen(true); break;
+        case 'opencart': openOrderReceipt(); break;
         case 'closecart': setCartOpen(false); break;
         case 'soldmode': soldMode = !soldMode; el.querySelector('#op').classList.toggle('soldmode', soldMode); renderHead(); renderCats(); renderMenu(); break;
       }

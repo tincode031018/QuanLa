@@ -16,7 +16,7 @@ function render() {
         <button class="role-card" data-role="order"><span class="ri">${icon('list')}</span><b>Order</b><span>Nhân viên phục vụ<br>gọi món tại bàn</span></button>
         <button class="role-card cashier" data-role="cashier"><span class="ri">${icon('cash')}</span><b>Thu Ngân</b><span>Thanh toán, quản lý<br>& báo cáo</span></button>
       </div>
-      ${db.mode === 'local' ? `<div class="demo-hint">🧪 Chế độ demo · PIN Order <span class="kbd">111111</span> · Thu Ngân <span class="kbd">999999</span></div>` : ''}`;
+      ${db.mode === 'local' ? `<div class="demo-hint">Chế độ demo · PIN Order <span class="kbd">111111</span> · Thu Ngân <span class="kbd">999999</span></div>` : ''}`;
   } else if (step === 'pin') {
     inner = `
       <div class="center"><span class="pill ${role === 'cashier' ? 'st-waiting' : 'st-open'}">${ROLE_NAME[role]}</span>

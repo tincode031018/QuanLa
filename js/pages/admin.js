@@ -2,31 +2,51 @@
 import { db } from '../db.js';
 import { store, billOfTable, DEFAULT_SETTINGS } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, setTitle } from '../ui.js';
-import { esc, money, num, parseMoney, download, clone } from '../utils.js';
-import { BANKS, vietQR, printHTML, billPrintHTML } from '../bill.js';
+import { esc, money, num, parseMoney, download, clone, norm } from '../utils.js';
+import { BANKS, vietQR } from '../bill.js';
 import { sendAuto } from '../zalo.js';
 import { APP_VERSION } from '../config.js';
 
-let el, tab = 'menu';
+let el, tab = 'menu', menuPage = 0, menuQuery = '';
 const TABS = [['menu', 'Thực đơn', 'utensils'], ['tables', 'Bàn & khu vực', 'grid'], ['settings', 'Cài đặt', 'settings']];
 const nextOrder = list => Math.max(0, ...list.map(x => x.order || 0)) + 1;
+const categoryHue = index => `hsl(${(145 + index * 31) % 360} 48% 36%)`;
 
 /* ================= THỰC ĐƠN ================= */
+function menuPageData() {
+  const matches = menuQuery ? store.menu.filter(m => norm(m.name).includes(norm(menuQuery))) : store.menu;
+  const pages = store.categories.filter(c => matches.some(m => m.categoryId === c.id)).map(c => ({ id: c.id, name: c.name }));
+  const orphan = matches.filter(m => !store.categories.some(c => c.id === m.categoryId));
+  if (orphan.length) pages.push({ id: null, name: 'Chưa phân loại' });
+  return { matches, pages, orphan };
+}
 function menuHTML() {
   const cats = store.categories;
-  const orphan = store.menu.filter(m => !cats.some(c => c.id === m.categoryId));
-  const group = (c, items) => `<div class="card mb">
-    <div class="card-h"><h3>${esc(c ? c.name : 'Chưa phân loại')} <span class="muted xs">(${items.length})</span></h3>
+  const { matches, pages, orphan } = menuPageData();
+  menuPage = Math.max(0, Math.min(menuPage, pages.length - 1));
+  const page = pages[menuPage];
+  const group = (c, items) => {
+    const hue = categoryHue(Math.max(0, cats.findIndex(x => x.id === c?.id)));
+    return `<div class="card mb admin-menu-card">
+    <div class="card-h"><h3 class="category-heading" style="--category-color:${hue}">${esc(c ? c.name : 'Chưa phân loại')} <span class="muted xs">(${items.length})</span></h3>
       ${c ? `<div class="row"><button class="icon-btn sm" data-a="catUp" data-id="${c.id}" title="Lên">${icon('up')}</button><button class="icon-btn sm" data-a="catEdit" data-id="${c.id}" title="Đổi tên">${icon('edit')}</button><button class="icon-btn sm danger" data-a="catDel" data-id="${c.id}" title="Xóa">${icon('trash')}</button></div>` : ''}</div>
-    <div class="list" style="margin-top:8px">${items.map(m => `<div class="admin-row">
+    <div class="list admin-menu-items" style="margin-top:8px">${items.map(m => `<div class="admin-row">
       <div class="ar-main"><b>${esc(m.name)}</b><span class="small muted">${m.price > 0 ? money(m.price) : esc(m.priceLabel || 'Chưa có giá')}${m.priceNote ? ` · ${esc(m.priceNote)}` : ''}</span></div>
       <label class="switch" title="Còn / hết món"><input type="checkbox" data-a="avail" data-id="${m.id}" ${m.available !== false ? 'checked' : ''}><span></span></label>
       <button class="icon-btn sm" data-a="itemEdit" data-id="${m.id}">${icon('edit')}</button>
       <button class="icon-btn sm danger" data-a="itemDel" data-id="${m.id}">${icon('trash')}</button>
     </div>`).join('') || '<div class="admin-row muted small">Chưa có món</div>'}</div></div>`;
+  };
   return `<div class="row mb wrap"><button class="btn btn-primary" data-a="itemAdd">${icon('plus')} Thêm món</button><button class="btn" data-a="catAdd">${icon('layers')} Thêm danh mục</button>
-    <span class="small muted">Gạt công tắc để báo <b>hết món</b> – máy Order cập nhật ngay.</span></div>
-    ${cats.map(c => group(c, store.menu.filter(m => m.categoryId === c.id))).join('')}${orphan.length ? group(null, orphan) : ''}`;
+    <div class="category-shortcuts">${pages.filter(c => c.id).map(c => { const i = cats.findIndex(x => x.id === c.id); return `<button class="category-shortcut ${page?.id === c.id ? 'active' : ''}" style="--category-color:${categoryHue(i)}" data-a="catPage" data-id="${c.id}">${esc(c.name)}</button>`; }).join('')}</div>
+    </div>
+    <div class="searchbox menu-admin-search">${icon('search')}<input class="input" id="menuSearch" type="search" placeholder="Tìm món trong toàn bộ thực đơn…" value="${esc(menuQuery)}" autocomplete="off"></div>
+    ${pages.length > 1 ? `<div class="menu-page-nav admin-menu-page mb">
+      <button class="icon-btn" data-a="menuPrev" aria-label="Danh mục trước" ${menuPage <= 0 ? 'disabled' : ''}>${icon('back')}</button>
+      <div class="menu-page-label"><small>${menuPage + 1} / ${pages.length}</small></div>
+      <button class="icon-btn" data-a="menuNext" aria-label="Danh mục tiếp" ${menuPage >= pages.length - 1 ? 'disabled' : ''}>${icon('next')}</button>
+    </div>` : ''}
+    ${page ? group(page.id ? cats.find(c => c.id === page.id) : null, page.id ? matches.filter(m => m.categoryId === page.id) : orphan) : menuQuery ? '<div class="empty">Không tìm thấy món phù hợp</div>' : '<div class="empty">Chưa có danh mục thực đơn</div>'}`;
 }
 async function itemForm(m = {}) {
   const res = await modal({
@@ -84,13 +104,15 @@ async function tableForm(t = {}) {
 let sdraft;
 function settingsHTML() {
   const s = sdraft;
-  const z = s.zalo, p = s.print, b = s.bank;
+  s.address ||= '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long';
+  const z = s.zalo, b = s.bank;
   return `<div class="settings-grid">
     <div class="card card-pad stack"><h3>${icon('store')} Thông tin quán</h3>
       <label class="field"><span>Tên quán</span><input class="input" data-k="shopName" value="${esc(s.shopName)}"></label>
       <label class="field"><span>Khẩu hiệu</span><input class="input" data-k="slogan" value="${esc(s.slogan || '')}"></label>
       <label class="field"><span>Địa chỉ</span><input class="input" data-k="address" value="${esc(s.address)}" placeholder="Số nhà, đường, quận…"></label>
-      <label class="field"><span>Số điện thoại</span><input class="input" data-k="phone" value="${esc(s.phone)}" inputmode="tel"></label>
+      <label class="field"><span>Số điện thoại</span><input class="input" data-k="phone" value="${esc((s.phone || '').split(/\s+-\s+/)[0])}" inputmode="tel"></label>
+      <label class="field"><span>Chủ quán</span><input class="input" data-k="ownerName" value="${esc(s.ownerName || (s.phone || '').split(/\s+-\s+/)[1] || '')}"></label>
     </div>
 
     <div class="card card-pad stack"><h3>${icon('qr')} Chuyển khoản (VietQR)</h3>
@@ -128,14 +150,6 @@ function settingsHTML() {
       </div>
     </div>
 
-    <div class="card card-pad stack"><h3>${icon('print')} Máy in nhiệt 80mm</h3>
-      <div class="row-between"><span><b>Tự in hóa đơn</b><div class="xs muted">Sau khi thanh toán</div></span><label class="switch"><input type="checkbox" data-k="print.autoBill" ${p.autoBill ? 'checked' : ''}><span></span></label></div>
-      <div class="row-between"><span><b>Tự in phiếu bếp</b><div class="xs muted">Khi gửi bếp (máy có máy in)</div></span><label class="switch"><input type="checkbox" data-k="print.autoKitchen" ${p.autoKitchen ? 'checked' : ''}><span></span></label></div>
-      <div class="row-between"><span><b>In mã QR trên hóa đơn</b><div class="xs muted">Khách quét để chuyển khoản</div></span><label class="switch"><input type="checkbox" data-k="print.showQR" ${p.showQR ? 'checked' : ''}><span></span></label></div>
-      <label class="field"><span>Lời cảm ơn cuối hóa đơn</span><input class="input" data-k="print.footer" value="${esc(p.footer)}"></label>
-      <button class="btn" data-a="printTest">${icon('print')} In thử</button>
-    </div>
-
     <div class="card card-pad stack"><h3>${icon('clock')} Khác</h3>
       <label class="field"><span>Cảnh báo bàn ngồi lâu (phút)</span><input class="input" data-k="longSitMinutes" data-type="num" value="${s.longSitMinutes}" inputmode="numeric"></label>
       <label class="field"><span>Tự khóa máy Thu Ngân sau (phút, 0 = tắt)</span><input class="input" data-k="lockMinutes" data-type="num" value="${s.lockMinutes}" inputmode="numeric"></label>
@@ -164,6 +178,9 @@ async function onAction(a, t) {
   const find = (list) => list.find(x => x.id === id);
   switch (a) {
     /* thực đơn */
+    case 'catPage': menuPage = menuPageData().pages.findIndex(c => c.id === id); if (menuPage >= 0) { render(); el.closest('.main')?.scrollTo(0, 0); } return;
+    case 'menuPrev': menuPage = Math.max(0, menuPage - 1); render(); el.closest('.main')?.scrollTo(0, 0); return;
+    case 'menuNext': menuPage = Math.min(menuPageData().pages.length - 1, menuPage + 1); render(); el.closest('.main')?.scrollTo(0, 0); return;
     case 'itemAdd': if (!store.categories.length) return toast('Thêm danh mục trước', 'warn'); return itemForm({ categoryId: store.categories[0].id });
     case 'itemEdit': return itemForm(find(store.menu));
     case 'itemDel': { const m = find(store.menu); if (await confirmBox(`Xóa món <b>${esc(m.name)}</b>?`, { danger: true, okText: 'Xóa' })) { await db.remove('menu', id); toast('Đã xóa'); } return; }
@@ -211,12 +228,10 @@ async function onAction(a, t) {
       const z = sdraft.zalo;
       if (!z.workerUrl || !z.appKey || !z.kitchenChatId) return toast('Nhập đủ Worker, App Key và ID nhóm', 'warn');
       const old = store.settings.zalo; store.settings.zalo = z;
-      try { await sendAuto(z.kitchenChatId, `✅ ${sdraft.shopName}: kết nối Zalo thành công!`); toast('Đã gửi tin thử – kiểm tra nhóm Zalo'); }
+      try { await sendAuto(z.kitchenChatId, `${sdraft.shopName}: kết nối Zalo thành công!`); toast('Đã gửi tin thử – kiểm tra nhóm Zalo'); }
       catch (e) { toast('Gửi lỗi: ' + e.message, 'err', 5000); }
       store.settings.zalo = old; return;
     }
-    case 'printTest': return printHTML(billPrintHTML({ tableName: 'Bàn 1', code: 'HD-TEST', openedAt: Date.now() - 3600e3, closedAt: Date.now(), closedBy: store.user.name,
-      items: [{ menuId: 'a', name: 'Cơm tấm sườn bì chả', price: 45000, qty: 2 }, { menuId: 'b', name: 'Trà đá', price: 5000, qty: 2, note: 'Ít đá' }], pay: { method: 'cash', received: 100000, cash: 100000 } }));
     case 'saveSettings': {
       const s = clone(sdraft);
       if (store.settings.pins) s.pins = store.settings.pins;
@@ -231,7 +246,7 @@ async function onAction(a, t) {
 
 export default {
   async mount(root, [t]) {
-    el = root; tab = TABS.some(x => x[0] === t) ? t : 'menu';
+    el = root; tab = TABS.some(x => x[0] === t) ? t : 'menu'; menuQuery = '';
     setTitle('Quản lý · ' + TABS.find(x => x[0] === tab)[1]);
     sdraft = clone({ ...DEFAULT_SETTINGS, ...store.settings }); delete sdraft.pins;
     render();
@@ -261,9 +276,18 @@ export default {
         p[t.dataset.f] = t.dataset.f === 'value' ? (parseFloat(t.value) || 0) : t.value;
       }
     };
+    const onInput = e => {
+      if (e.target.id !== 'menuSearch') return;
+      menuQuery = e.target.value;
+      menuPage = 0;
+      render();
+      const input = el.querySelector('#menuSearch');
+      input?.focus(); input?.setSelectionRange(menuQuery.length, menuQuery.length);
+    };
     el.addEventListener('click', onClick);
     el.addEventListener('change', onChange);
-    return () => { el.removeEventListener('click', onClick); el.removeEventListener('change', onChange); };
+    el.addEventListener('input', onInput);
+    return () => { el.removeEventListener('click', onClick); el.removeEventListener('change', onChange); el.removeEventListener('input', onInput); };
   },
   update(keys) {
     if (tab === 'settings') return; // không ghi đè khi đang sửa

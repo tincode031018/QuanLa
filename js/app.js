@@ -16,11 +16,12 @@ import history from './pages/history.js';
 import reports from './pages/reports.js';
 import admin from './pages/admin.js';
 import soldout from './pages/soldout.js';
+import printer from './pages/printer.js';
 
-const ROUTES = { login, tables, order, orders, bill, history, reports, admin, soldout };
+const ROUTES = { login, tables, order, orders, bill, history, reports, admin, soldout, printer };
 const NAV = {
   order: [['tables', 'Sơ đồ bàn', 'grid'], ['orders', 'Đơn', 'list'], ['soldout', 'Hết món', 'ban']],
-  cashier: [['tables', 'Sơ đồ bàn', 'grid'], ['orders', 'Thu ngân', 'cash'], ['history', 'Lịch sử', 'receipt'], ['reports', 'Báo cáo', 'chart'], ['admin', 'Quản lý', 'settings']],
+  cashier: [['tables', 'Sơ đồ bàn', 'grid'], ['orders', 'Thu ngân', 'cash'], ['history', 'Lịch sử', 'receipt'], ['reports', 'Báo cáo', 'chart'], ['printer', 'Máy in', 'print'], ['admin', 'Quản lý', 'settings']],
 };
 const ALLOWED = { order: ['tables', 'order', 'orders', 'soldout'], cashier: Object.keys(ROUTES) };
 

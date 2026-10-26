@@ -5,8 +5,9 @@ import { dayKey, hashPin } from './utils.js';
 export const DEFAULT_SETTINGS = {
   shopName: 'QUÁN LÁ',
   slogan: 'Cơm nhà – Vị quê',
-  address: '',
-  phone: '0983.759.580 - Hương',
+  address: '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long',
+  phone: '0983.759.580',
+  ownerName: 'Hương',
   bank: { bin: '', accountNo: '', accountName: '' },
   discountPresets: [5, 10, 15, 20],
   surchargePresets: [

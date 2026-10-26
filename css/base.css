@@ -1,30 +1,30 @@
 /* ===== Quán Lá – base: biến màu, reset, chữ ===== */
 :root {
-  --brand: #1f7a4d;
-  --brand-600: #17653f;
-  --brand-700: #114d30;
-  --brand-50: #eaf6ef;
-  --brand-100: #cfeadb;
-  --accent: #f59e0b;
-  --accent-600: #d97f06;
-  --accent-50: #fff6e5;
+  --brand: #176b50;
+  --brand-600: #125840;
+  --brand-700: #0e4533;
+  --brand-50: #eaf4ef;
+  --brand-100: #cfe3d8;
+  --accent: #d99a32;
+  --accent-600: #b5791c;
+  --accent-50: #fbf3e5;
   --danger: #e5484d;
   --danger-50: #fdeeee;
   --info: #2563eb;
   --info-50: #eaf1ff;
 
-  --bg: #f3f5f4;
+  --bg: #f4f6f5;
   --surface: #ffffff;
   --surface-2: #f7f9f8;
-  --line: #e2e8e4;
-  --text: #16201b;
-  --muted: #6a756f;
+  --line: #dfe7e2;
+  --text: #17231d;
+  --muted: #697770;
 
-  --radius: 16px;
-  --radius-sm: 11px;
-  --shadow-sm: 0 1px 2px rgba(15, 30, 22, .06);
-  --shadow: 0 1px 2px rgba(15, 30, 22, .05), 0 6px 18px rgba(15, 30, 22, .07);
-  --shadow-lg: 0 18px 50px rgba(15, 30, 22, .22);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow-sm: 0 1px 2px rgba(20, 43, 31, .04), 0 3px 10px rgba(20, 43, 31, .035);
+  --shadow: 0 2px 5px rgba(20, 43, 31, .04), 0 10px 28px rgba(20, 43, 31, .055);
+  --shadow-lg: 0 18px 52px rgba(16, 35, 25, .18);
 
   --header-h: 56px;
   --nav-h: 62px;
@@ -63,9 +63,9 @@ body {
   overscroll-behavior-y: none;
 }
 h1, h2, h3, h4, p { margin: 0; }
-h1 { font-size: 22px; font-weight: 750; }
-h2 { font-size: 18px; font-weight: 700; }
-h3 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+h1 { font-size: 22px; font-weight: 700; letter-spacing: -.25px; }
+h2 { font-size: 18px; font-weight: 650; letter-spacing: -.15px; }
+h3 { font-size: 15px; font-weight: 650; display: flex; align-items: center; gap: 7px; }
 h3 svg.i { width: 18px; height: 18px; color: var(--muted); }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -75,6 +75,10 @@ img, svg { display: block; max-width: 100%; }
 svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 45%, transparent); outline-offset: 2px; }
 ::selection { background: var(--brand-100); }
+
+/* Refined type hierarchy and focus treatment */
+.muted { color: var(--muted); }
+strong, b { letter-spacing: -.08px; }
 
 /* Tiện ích */
 .muted { color: var(--muted); }
@@ -110,7 +114,7 @@ svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor;
   html, body { background: #fff !important; }
   body > *:not(#print-area) { display: none !important; }
   #print-area {
-    display: block; width: 80mm; padding: 3mm 4mm 6mm; color: #000;
+    display: block; width: 80mm; max-width: 100%; margin-inline: auto; padding: 3mm 4mm 6mm; color: #000;
     font: 12.5px/1.35 "Courier New", Consolas, monospace;
   }
   #print-area * { color: #000 !important; }

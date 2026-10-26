@@ -26,6 +26,10 @@ export function calc(bill, discount = bill?.discount, surcharge = bill?.surcharg
   const surchargeAmt = adjAmount(surcharge, subtotal);
   return { items, subtotal, discountAmt, surchargeAmt, total: Math.max(0, subtotal - discountAmt + surchargeAmt), count: itemCount(items) };
 }
+function shopContact(s = store.settings) {
+  const legacy = String(s.phone || '').match(/^(.*?)\s+-\s+(.+)$/);
+  return { phone: legacy ? legacy[1] : (s.phone || ''), owner: s.ownerName || legacy?.[2] || '' };
+}
 export const adjLabel = (adj, fallback) => {
   if (!adj || !adj.value) return fallback;
   const name = adj.label || fallback;
@@ -65,8 +69,8 @@ const HR = '──────────────';
 export function kitchenText({ tableName, round, items, by, at, cancel = false, reason = '' }) {
   const s = store.settings;
   const lines = [
-    cancel ? `❌ HỦY MÓN – ${tableName.toUpperCase()}` : `🔥 PHIẾU BẾP – ${tableName.toUpperCase()}${round > 1 ? ` (gọi thêm lần ${round})` : ''}`,
-    `⏰ ${fmtTime(at)} · 👤 ${by}`,
+    cancel ? `HỦY MÓN – ${tableName.toUpperCase()}` : `PHIẾU BẾP – ${tableName.toUpperCase()}${round > 1 ? ` (gọi thêm lần ${round})` : ''}`,
+    `${fmtTime(at)} · ${by}`,
     HR,
   ];
   for (const it of items) {
@@ -76,7 +80,7 @@ export function kitchenText({ tableName, round, items, by, at, cancel = false, r
   lines.push(HR);
   if (cancel && reason) lines.push(`Lý do: ${reason}`);
   else lines.push(`Tổng: ${itemCount(items)} món`);
-  lines.push(`🌿 ${s.shopName}`);
+  lines.push(s.shopName);
   return lines.join('\n');
 }
 
@@ -84,21 +88,24 @@ export function billText(bill, { draft = false } = {}) {
   const s = store.settings;
   const c = calc(bill);
   const lines = [
-    `🧾 ${s.shopName.toUpperCase()} – ${draft ? 'TẠM TÍNH' : 'HÓA ĐƠN'}`,
+    `${s.shopName.toUpperCase()} – ${draft ? 'TẠM TÍNH' : 'HÓA ĐƠN'}`,
+    s.address || '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long',
+    ...(shopContact(s).phone ? [`ĐT: ${shopContact(s).phone}`] : []),
+    ...(shopContact(s).owner ? [`Chủ quán: ${shopContact(s).owner}`] : []),
     `${bill.code ? `Mã: ${bill.code} · ` : ''}${bill.tableName}`,
-    `🕒 ${fmtTime(bill.openedAt)}${bill.closedAt ? ` – ${fmtTime(bill.closedAt)}` : ''} · ${fmtDate(bill.closedAt || Date.now())}`,
+    `${fmtTime(bill.openedAt)}${bill.closedAt ? ` – ${fmtTime(bill.closedAt)}` : ''} · ${fmtDate(bill.closedAt || Date.now())}`,
     HR,
   ];
   for (const it of groupItems(c.items)) {
-    lines.push(`• ${it.name} x${it.qty} = ${num(it.price * it.qty)}`);
+    lines.push(`${it.name} x${it.qty} = ${num(it.price * it.qty)}`);
     if (it.note) lines.push(`   (${it.note})`);
   }
   lines.push(HR, `Tạm tính: ${money(c.subtotal)}`);
   if (c.discountAmt) lines.push(`${adjLabel(bill.discount, 'Giảm giá')}: -${money(c.discountAmt)}`);
   if (c.surchargeAmt) lines.push(`${adjLabel(bill.surcharge, 'Phụ thu')}: +${money(c.surchargeAmt)}`);
-  lines.push(`💰 TỔNG CỘNG: ${money(c.total)}`);
+  lines.push(`TỔNG CỘNG: ${money(c.total)}`);
   if (bill.pay) {
-    lines.push(`💳 ${payLabel(bill.pay.method)}`);
+    lines.push(payLabel(bill.pay.method));
     if (bill.pay.method === 'cash' && bill.pay.received > c.total) lines.push(`Khách đưa: ${money(bill.pay.received)} · Thối: ${money(bill.pay.received - c.total)}`);
     if (bill.pay.method === 'mixed') lines.push(`TM: ${money(bill.pay.cash)} · CK: ${money(bill.pay.transfer)}`);
   }
@@ -110,19 +117,19 @@ export function billText(bill, { draft = false } = {}) {
 export function reportText(r, label) {
   const s = store.settings;
   const lines = [
-    `📊 ${s.shopName.toUpperCase()} – BÁO CÁO`,
-    `📅 ${label}`,
+    `${s.shopName.toUpperCase()} – BÁO CÁO`,
+    label,
     HR,
-    `💰 Doanh thu: ${money(r.revenue)}`,
-    `🧾 Số bill: ${r.count} · TB: ${money(r.avg)}`,
-    `💵 Tiền mặt: ${money(r.cash)}`,
-    `🏦 Chuyển khoản: ${money(r.transfer)}`,
+    `Doanh thu: ${money(r.revenue)}`,
+    `Số bill: ${r.count} · TB: ${money(r.avg)}`,
+    `Tiền mặt: ${money(r.cash)}`,
+    `Chuyển khoản: ${money(r.transfer)}`,
   ];
-  if (r.discount) lines.push(`🏷 Giảm giá: -${money(r.discount)}`);
-  if (r.surcharge) lines.push(`➕ Phụ thu: +${money(r.surcharge)}`);
-  if (r.cancelled) lines.push(`❌ Bill hủy: ${r.cancelled}`);
+  if (r.discount) lines.push(`Giảm giá: -${money(r.discount)}`);
+  if (r.surcharge) lines.push(`Phụ thu: +${money(r.surcharge)}`);
+  if (r.cancelled) lines.push(`Bill hủy: ${r.cancelled}`);
   if (r.top.length) {
-    lines.push(HR, '🔥 Món bán chạy:');
+    lines.push(HR, 'Món bán chạy:');
     r.top.slice(0, 5).forEach((t, i) => lines.push(`${i + 1}. ${t.name} – ${t.qty} phần`));
   }
   lines.push(HR, `Gửi lúc ${fmtDT(Date.now())}`);
@@ -132,14 +139,16 @@ export function reportText(r, label) {
 /* ---------- Bản IN 80mm ---------- */
 function shopHeader() {
   const s = store.settings;
+  const { phone, owner } = shopContact(s);
   return `<div class="r-c"><div class="r-shop">${esc(s.shopName.toUpperCase())}</div>
-    ${s.address ? `<div>${esc(s.address)}</div>` : ''}${s.phone ? `<div>ĐT: ${esc(s.phone)}</div>` : ''}</div>`;
+    ${phone ? `<div>ĐT: ${esc(phone)}</div>` : ''}${owner ? `<div>Chủ quán: ${esc(owner)}</div>` : ''}</div>`;
 }
 export function billPrintHTML(bill, { draft = false } = {}) {
   const s = store.settings;
   const c = calc(bill);
   const qr = (draft || bill.pay?.method !== 'cash') && s.print.showQR ? vietQR(bill.pay?.method === 'mixed' ? bill.pay.transfer : c.total, qrInfo(bill)) : '';
   return `${shopHeader()}
+  <div class="r-c">${esc(s.address || '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long')}</div>
   <div class="r-c r-title">${draft ? 'PHIẾU TẠM TÍNH' : 'HÓA ĐƠN THANH TOÁN'}</div>
   ${bill.code ? `<div class="r-c">Số: ${esc(bill.code)}</div>` : ''}
   <div class="r-hr"></div>
@@ -220,7 +229,7 @@ export async function textToImage(text, title = '') {
   cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr);
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = '#1F7A4D'; ctx.fillRect(0, 0, W, 8);
-  ctx.fillStyle = '#1F7A4D'; ctx.font = font(800, 26); ctx.fillText('🌿 ' + (title || store.settings.shopName), P, P + 26);
+  ctx.fillStyle = '#1F7A4D'; ctx.font = font(800, 26); ctx.fillText(title || store.settings.shopName, P, P + 26);
   let y = P + 70;
   lines.forEach((l, i) => {
     const big = /TỔNG CỘNG|Doanh thu/.test(l);

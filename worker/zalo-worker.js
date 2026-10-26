@@ -59,7 +59,7 @@ export default {
       const text = (msg?.text || '').toLowerCase();
       if (msg?.chat?.id && /\/id|\bid\b|ma nhom|mã nhóm/.test(text)) {
         const type = msg.chat.chat_type === 'GROUP' ? 'nhóm' : 'cá nhân';
-        await send(env.BOT_TOKEN, msg.chat.id, `🆔 ID cuộc trò chuyện ${type} này:\n${msg.chat.id}\n\nDán vào app Quán Lá > Quản lý > Cài đặt > Zalo.`);
+        await send(env.BOT_TOKEN, msg.chat.id, `ID cuộc trò chuyện ${type} này:\n${msg.chat.id}\n\nDán vào app Quán Lá > Quản lý > Cài đặt > Zalo.`);
       }
       return json({ message: 'Success' });
     }
