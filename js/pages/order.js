@@ -2,7 +2,7 @@
 import { store, tableById, billOfTable, menuById } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, pickBox, setTitle } from '../ui.js';
 import { esc, money, norm, fmtTime, minutesSince, dur } from '../utils.js';
-import { calc, rounds, kitchenText, kitchenPrintHTML, sumItems, itemCount } from '../bill.js';
+import { calc, rounds, kitchenText, kitchenPrintHTML, sumItems, itemCount } from '../bill.js?v=1.0.23';
 import { sendItems, requestPayment, reopenBill, moveTable, setAvailable } from '../actions.js';
 import { deliver } from '../zalo.js';
 

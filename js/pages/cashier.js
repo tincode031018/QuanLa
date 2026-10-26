@@ -2,7 +2,7 @@
 import { store, emit } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, pickBox, setTitle } from '../ui.js';
 import { esc, money, num, parseMoney, fmtTime, debounce } from '../utils.js';
-import { calc, rounds, adjLabel, vietQR, qrInfo, bankName, billText, billPrintHTML, printHTML, kitchenText, payLabel } from '../bill.js';
+import { calc, rounds, adjLabel, vietQR, qrInfo, bankName, billText, billPrintHTML, printHTML, kitchenText, payLabel } from '../bill.js?v=1.0.23';
 import { voidItem, saveAdjust, completePayment, cancelBill, mergeBills, moveTable, reopenBill } from '../actions.js';
 import { deliver, shareSheet, autoReady } from '../zalo.js';
 
@@ -52,10 +52,13 @@ function skeleton() {
         </div>
       </section>
       <section class="stack pay-side">
-        <div class="card card-pad stack" id="adjust"></div>
-        <div class="card card-pad stack-sm" id="sum"></div>
-        <div class="card card-pad stack" id="method"></div>
-        <button class="btn btn-primary btn-lg btn-block" data-act="complete" id="completeBtn">${icon('check')} HOÀN TẤT THANH TOÁN</button>
+        <div class="card card-pad stack-sm pay-summary-card">
+          <div id="adjust"></div>
+          <div class="divider" style="margin:4px 0"></div>
+          <div id="sum" class="stack-sm"></div>
+        </div>
+        <div class="card card-pad stack-sm" id="method"></div>
+        <button class="btn btn-primary btn-block" data-act="complete" id="completeBtn">${icon('check')} HOÀN TẤT THANH TOÁN</button>
       </section>
     </div>
   </div>`;
@@ -80,13 +83,22 @@ function renderItems() {
 function renderAdjust() {
   const d = draft.discount, sc = draft.surcharge;
   el.querySelector('#adjust').innerHTML = `
-    <div class="row-between"><h3>${icon('tag')} Giảm giá</h3>
-      <label class="adjust-toggle"><input type="checkbox" data-adjust="discount" ${draft.discountEnabled ? 'checked' : ''}> Áp dụng</label></div>
-    <input class="input adjust-percent" id="discVal" type="number" min="0" max="100" step="0.000001" inputmode="decimal" placeholder="Nhập % giảm" value="${d?.value || ''}" ${draft.discountEnabled ? '' : 'disabled'}>
-    <div class="divider"></div>
-    <div class="row-between"><h3>${icon('plus')} Phụ thu</h3>
-      <label class="adjust-toggle"><input type="checkbox" data-adjust="surcharge" ${draft.surchargeEnabled ? 'checked' : ''}> Áp dụng</label></div>
-    <input class="input adjust-percent" id="surVal" type="number" min="0" max="100" step="0.000001" inputmode="decimal" placeholder="Nhập % phụ thu" value="${sc?.value || ''}" ${draft.surchargeEnabled ? '' : 'disabled'}>`;
+    <div class="adjust-grid">
+      <div class="adjust-box">
+        <div class="row-between">
+          <span class="adjust-title">${icon('tag')} Giảm giá</span>
+          <label class="adjust-toggle"><input type="checkbox" data-adjust="discount" ${draft.discountEnabled ? 'checked' : ''}> Bật</label>
+        </div>
+        <input class="input adjust-percent" id="discVal" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="%" value="${d?.value || ''}" ${draft.discountEnabled ? '' : 'disabled'}>
+      </div>
+      <div class="adjust-box">
+        <div class="row-between">
+          <span class="adjust-title">${icon('plus')} Phụ thu</span>
+          <label class="adjust-toggle"><input type="checkbox" data-adjust="surcharge" ${draft.surchargeEnabled ? 'checked' : ''}> Bật</label>
+        </div>
+        <input class="input adjust-percent" id="surVal" type="number" min="0" max="100" step="any" inputmode="decimal" placeholder="%" value="${sc?.value || ''}" ${draft.surchargeEnabled ? '' : 'disabled'}>
+      </div>
+    </div>`;
 }
 
 function renderSum() {
@@ -95,7 +107,7 @@ function renderSum() {
     <div class="sum-row"><span>Tạm tính (${c.count} món)</span><b>${money(c.subtotal)}</b></div>
     ${c.discountAmt ? `<div class="sum-row"><span>${esc(adjLabel(draft.discount, 'Giảm giá'))}</span><b class="text-danger">-${money(c.discountAmt)}</b></div>` : ''}
     ${c.surchargeAmt ? `<div class="sum-row"><span>${esc(adjLabel(draft.surcharge, 'Phụ thu'))}</span><b>+${money(c.surchargeAmt)}</b></div>` : ''}
-    <div class="total-box mt"><span class="bold">TỔNG CỘNG</span><span class="tb-val">${money(c.total)}</span></div>`;
+    <div class="total-box"><span class="bold">TỔNG CỘNG</span><span class="tb-val">${money(c.total)}</span></div>`;
   updateDynamic();
 }
 

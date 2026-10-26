@@ -258,31 +258,53 @@
 
 /* --- Thanh toán --- */
 .pay-page { padding: 0 0 24px; font-weight: 400; }
-.pay-page h3, .pay-page .ph-title b { font-weight: 550; }
-.pay-page .bold, .pay-page .btn, .pay-page .chip, .pay-page .seg button { font-weight: 500; }
+.pay-page h3, .pay-page .ph-title b { font-weight: 600; font-size: 15px; }
+.pay-page .bold, .pay-page .btn, .pay-page .chip, .pay-page .seg button { font-weight: 550; }
 .pay-page .sline .sn > b { font-weight: 500 !important; }
 .pay-page .sum-row b { font-weight: 600; }
 .pay-grid { display: grid; gap: 12px; padding: 12px; }
 .pay-items .sline { padding: 9px 0; border-bottom: 1px dashed var(--line); align-items: center; }
 .pay-items .sline:last-child { border-bottom: 0; }
-.total-box { padding: 16px; border-radius: 16px; background: var(--brand); color: #fff; display: flex; justify-content: space-between; align-items: center; }
-.total-box > .bold { font-weight: 500; }
-.total-box .tb-val { font-size: 28px; font-weight: 550; font-variant-numeric: tabular-nums; }
-.pay-page #completeBtn { font-weight: 500; }
-.adjust-toggle { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; cursor: pointer; }
-.adjust-toggle input { width: 17px; height: 17px; margin: 0; accent-color: var(--brand); }
-.adjust-percent { font-weight: 400; }
-.adjust-percent:disabled { opacity: .55; background: var(--surface-2); }
-.change-box { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--brand-50); font-weight: 750; }
-.change-box b { font-size: 20px; color: var(--brand); font-variant-numeric: tabular-nums; }
+
+/* Chiết khấu, Phụ thu nhỏ gọn 2 cột */
+.adjust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.adjust-box { display: flex; flex-direction: column; gap: 4px; }
+.adjust-title { font-size: 12.5px; font-weight: 650; display: inline-flex; align-items: center; gap: 4px; color: var(--text); }
+.adjust-title svg.i { width: 13px; height: 13px; color: var(--muted); }
+.adjust-toggle { font-size: 11.5px; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.adjust-toggle input { width: 14px; height: 14px; margin: 0; accent-color: var(--brand); }
+.adjust-percent { min-height: 36px !important; padding: 6px 10px !important; font-size: 13px !important; border-radius: 9px !important; }
+.adjust-percent:disabled { opacity: .45; background: var(--surface-2); }
+
+/* Tổng tiền nhỏ gọn vừa vặn */
+.total-box {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+.total-box > .bold { font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+.total-box .tb-val { font-size: 20px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.pay-page #completeBtn { font-weight: 650; min-height: 46px; font-size: 15px; border-radius: 12px; }
+
+/* Tiền thối / chuyển khoản */
+.change-box { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 10px; background: var(--brand-50); font-weight: 650; font-size: 13.5px; }
+.change-box b { font-size: 17px; color: var(--brand); font-variant-numeric: tabular-nums; }
 .change-box.neg { background: var(--danger-50); }
 .change-box.neg b { color: var(--danger); }
-.qr-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px; border-radius: 14px; background: #fff; border: 1px solid var(--line); color: #111; text-align: center; }
-.qr-box img { width: 230px; height: auto; min-height: 120px; border-radius: 8px; }
+.qr-box { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; border-radius: 12px; background: #fff; border: 1px solid var(--line); color: #111; text-align: center; }
+.qr-box img { width: 200px; height: auto; min-height: 120px; border-radius: 8px; }
 .adj-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* Bố cục desktop cân đối, không bị lệch hoặc quá rộng */
 @media (min-width: 900px) {
-  .pay-page { height: 100%; overflow: auto; }
-  .pay-grid { grid-template-columns: minmax(0, 1fr) 420px; align-items: start; padding: 18px; gap: 18px; }
+  .pay-page { height: 100%; overflow: auto; max-width: 1050px; margin: 0 auto; padding: 0 12px 24px; }
+  .pay-page .pane-head { padding: 10px 4px 14px; }
+  .pay-grid { grid-template-columns: minmax(0, 1fr) 350px; align-items: start; padding: 12px 0; gap: 16px; }
   .pay-side { position: sticky; top: 76px; }
 }
 
@@ -301,3 +323,146 @@
 .hist-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--line); cursor: pointer; }
 .hist-item:first-child { border-top: 0; }
 .hist-item:hover { background: var(--surface-2); }
+
+/* --- Quản lý Tồn kho (Dạng bảng Excel) --- */
+.inv-page { padding: 0 0 32px; font-weight: 400; max-width: 1200px; margin: 0 auto; }
+.inv-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.inv-header-title { display: flex; align-items: center; gap: 12px; }
+.excel-brand-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #107C41; color: #fff;
+  padding: 6px 12px; border-radius: 8px;
+  font-weight: 800; font-size: 13px; letter-spacing: .5px;
+}
+.excel-brand-badge svg.i { width: 16px; height: 16px; }
+.inv-header-title h2 { font-size: 20px; font-weight: 750; margin: 0; }
+.inv-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Thẻ thống kê (Metrics Ribbon) */
+.inv-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.inv-metric {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow-sm);
+}
+.inv-metric .im-icon {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--muted); flex: none;
+}
+.inv-metric .im-icon svg.i { width: 22px; height: 22px; }
+.inv-metric .im-data { display: flex; flex-direction: column; min-width: 0; }
+.inv-metric .im-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.inv-metric .im-val { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text); }
+.inv-metric .im-val small { font-size: 13px; font-weight: 600; color: var(--muted); }
+.inv-metric .im-sub { font-size: 11.5px; color: var(--muted); font-weight: 550; }
+
+.inv-metric.metric-primary { border-color: var(--brand-100); background: var(--brand-50); }
+.inv-metric.metric-primary .im-icon { background: var(--brand); color: #fff; }
+.inv-metric.metric-primary .im-val { color: var(--brand); }
+.inv-metric.metric-primary .im-sub { color: var(--brand-700); }
+
+.inv-metric.metric-warn { border-color: var(--accent); background: var(--accent-50); }
+.inv-metric.metric-warn .im-icon { background: var(--accent); color: #fff; }
+.inv-metric.metric-warn .im-val { color: var(--accent-600); }
+
+.inv-metric.metric-danger { border-color: var(--danger); background: var(--danger-50); }
+.inv-metric.metric-danger .im-icon { background: var(--danger); color: #fff; }
+.inv-metric.metric-danger .im-val { color: var(--danger); }
+
+/* Thanh điều khiển Excel Toolbar (Tabs & Search) */
+.excel-toolbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px 12px 0 0;
+  border-bottom: 0; padding: 10px 14px; flex-wrap: wrap;
+}
+.excel-tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+.excel-tab {
+  padding: 6px 12px; font-size: 13px; font-weight: 600; border-radius: 8px;
+  background: transparent; border: 1px solid transparent; color: var(--muted); cursor: pointer;
+  white-space: nowrap; transition: .15s;
+}
+.excel-tab:hover { background: var(--surface-2); color: var(--text); }
+.excel-tab.active { background: #107C41; color: #fff; border-color: #107C41; }
+
+.excel-search { position: relative; display: flex; align-items: center; min-width: 240px; }
+.excel-search svg.i { position: absolute; left: 10px; width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+.excel-search .input { padding-left: 32px; padding-right: 28px; min-height: 36px; font-size: 13px; border-radius: 8px; }
+.excel-search .clear-btn { position: absolute; right: 8px; background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 16px; }
+
+/* Bảng tính Excel Sheet */
+.excel-wrap {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 12px 12px;
+  box-shadow: var(--shadow-sm); overflow: hidden;
+}
+.excel-sheet-header {
+  background: var(--surface-2); border-bottom: 1px solid var(--line);
+  padding: 6px 14px; font-size: 12px; display: flex; align-items: center; justify-content: space-between;
+}
+.sheet-info { display: flex; align-items: center; gap: 6px; }
+.sheet-icon { font-size: 14px; }
+.excel-scroll { overflow-x: auto; max-width: 100%; }
+
+.excel-table {
+  width: 100%; border-collapse: collapse; font-size: 13.5px;
+  text-align: left; background: #fff;
+}
+.excel-table th, .excel-table td {
+  border: 1px solid #e2e8f0; padding: 8px 12px; vertical-align: middle;
+}
+.excel-table thead th {
+  background: #f8fafc; color: #475569; font-weight: 650; white-space: nowrap;
+}
+.excel-col-letters th {
+  background: #edf2f7; color: #718096; font-size: 11px; font-weight: 700;
+  text-align: center; padding: 2px 4px; border-bottom: 1px solid #cbd5e1;
+}
+.excel-col-headers th {
+  font-size: 12.5px; padding: 9px 12px; background: #f1f5f9; color: #1e293b;
+}
+
+.excel-table tbody tr { transition: background .12s; }
+.excel-table tbody tr:nth-child(even) { background: #fafbfc; }
+.excel-table tbody tr:hover { background: #f0fdf4; }
+.excel-table tbody tr.row-warn { background: #fffbeb; }
+.excel-table tbody tr.row-danger { background: #fef2f2; }
+
+/* Cột cụ thể trong bảng Excel */
+.excel-table .col-stt { width: 44px; text-align: center; color: var(--muted); font-weight: 600; font-size: 12.5px; }
+.excel-table .col-name { min-width: 180px; font-weight: 650; color: #0f172a; }
+.excel-sub { font-size: 11.5px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+.excel-table .col-type { width: 110px; }
+.excel-table .col-unit { width: 70px; text-align: center; font-weight: 600; }
+.excel-table .col-pack { width: 120px; font-size: 12px; color: var(--muted); }
+.excel-table .col-stock { width: 170px; }
+.excel-table .col-exported { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
+.excel-table .col-imported { width: 110px; text-align: right; font-variant-numeric: tabular-nums; }
+.excel-table .col-status { width: 100px; text-align: center; }
+.excel-table .col-actions { width: 160px; text-align: center; white-space: nowrap; }
+
+.stock-main { font-size: 15px; font-variant-numeric: tabular-nums; }
+.stock-sub { font-size: 11.5px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+.text-ok { color: #15803d; }
+.text-warn { color: #b45309; }
+.text-danger { color: #b91c1c; }
+
+/* Huy hiệu (Badges) */
+.excel-badge {
+  display: inline-block; padding: 3px 8px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 700; text-align: center;
+}
+.badge-ok { background: #dcfce7; color: #166534; }
+.badge-warn { background: #fef3c7; color: #92400e; }
+.badge-danger { background: #fee2e2; color: #991b1b; }
+.badge-sale { background: #ede9fe; color: #5b21b6; }
+.badge-import { background: #dcfce7; color: #15803d; }
+.badge-adjust { background: #fef3c7; color: #b45309; }
+
+.type-tag {
+  display: inline-block; padding: 2px 7px; border-radius: 4px;
+  font-size: 11px; font-weight: 650;
+}
+.tag-beer { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.tag-drink { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+
+.excel-empty { text-align: center; padding: 36px 16px; color: var(--muted); font-size: 14px; }
+.logs-table th, .logs-table td { border-color: var(--line); }
+

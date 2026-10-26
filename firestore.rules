@@ -18,6 +18,8 @@ service cloud.firestore {
       match /areas/{id}      { allow read: if staff(); allow write: if isCashier(); }
       match /categories/{id} { allow read: if staff(); allow write: if isCashier(); }
       match /counters/{id}   { allow read, write: if isCashier(); }
+      match /inventory/{id}  { allow read: if staff(); allow write: if isCashier(); }
+      match /inventory_logs/{id} { allow read: if staff(); allow write: if isCashier(); }
 
       match /menu/{id} {
         allow read: if staff();

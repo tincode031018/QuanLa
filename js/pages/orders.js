@@ -22,15 +22,17 @@ function render() {
       const c = calc(b);
       const g = groupItems(c.items);
       return `<div class="card card-pad order-pay-card ${b.status === 'waiting' ? 'waiting' : ''}">
-        <div class="row-between"><div class="row"><b style="font-size:17px">${esc(b.tableName)}</b>
-          <span class="pill st-${b.status}">${b.status === 'waiting' ? 'Chờ thanh toán' : 'Đang phục vụ'}</span>
-          ${isCashier && store.unseen.has(b.id) ? '<span class="pill st-cancelled">Mới</span>' : ''}</div></div>
-        <div class="xs muted">Vào ${fmtTime(b.openedAt)} · ${dur(minutesSince(b.openedAt))} · ${esc((b.staff || []).join(', '))}</div>
-        <div class="small order-card-items" style="min-height:40px">${g.slice(0, 5).map(i => `${i.qty}× ${esc(i.name)}`).join(' · ') || '<span class="muted">Chưa có món</span>'}${g.length > 5 ? ` <span class="muted">+${g.length - 5} món</span>` : ''}</div>
+        <div class="row-between">
+          <div class="row"><b style="font-size:18px">${esc(b.tableName)}</b>
+            <span class="pill st-${b.status}">${b.status === 'waiting' ? 'Chờ thanh toán' : 'Đang phục vụ'}</span>
+            ${isCashier && store.unseen.has(b.id) ? '<span class="pill st-cancelled">Mới</span>' : ''}</div>
+          <span class="pill"><b>${c.count}</b> món</span>
+        </div>
+        <div class="xs muted">Vào ${fmtTime(b.openedAt)} · ${dur(minutesSince(b.openedAt))}${b.staff?.length ? ` · ${esc(b.staff.join(', '))}` : ''}</div>
         <div class="order-card-foot">
           <div class="row-between order-card-total">
             <span class="xs muted">Tổng tiền</span>
-            <b class="num" style="font-size:18px">${money(c.total)}</b>
+            <b class="num" style="font-size:20px;color:var(--brand)">${money(c.total)}</b>
           </div>
           <div class="btn-row order-card-actions">
             <a class="btn btn-sm" href="#/order/${b.tableId}">${icon('plus')} Gọi món</a>
