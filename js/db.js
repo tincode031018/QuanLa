@@ -16,7 +16,15 @@ const isInc = v => v && typeof v === 'object' && INC in v;
 export let db = null;
 
 export async function initDB() {
-  if (!FIREBASE_CONFIG) throw new Error('Chưa cấu hình Firebase. Hãy thêm FIREBASE_CONFIG trong js/config.js để chạy thật.');
+  if (!FIREBASE_CONFIG) {
+    // The local demo database is retired. Drop its old sample records and
+    // cached login so an unconfigured app cannot keep presenting demo data.
+    try {
+      localStorage.removeItem('ql_db_v1');
+      localStorage.removeItem('ql_session');
+    } catch {}
+    throw new Error('Chưa cấu hình Firebase. Dữ liệu demo cũ đã được xóa khỏi trình duyệt. Hãy cấu hình Firebase để tiếp tục.');
+  }
   db = await createFirebase(FIREBASE_CONFIG);
   return db;
 }

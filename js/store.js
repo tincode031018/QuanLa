@@ -77,8 +77,8 @@ export const menuById = id => store.menu.find(m => m.id === id);
 /* ---------- Khởi tạo dữ liệu ban đầu ---------- */
 export async function seedIfNeeded() {
   const s = await db.get('settings', 'main');
-  if (s?.menuVersion >= 2 && s?.staffVersion >= 1) return false;
-  if (s?.menuVersion >= 2) {
+  if (s?.menuVersion >= 3 && s?.staffVersion >= 1) return false;
+  if (s?.menuVersion >= 3) {
     const cleanup = (await db.list('staff')).map(x => ['remove', 'staff', x.id]);
     cleanup.push(['update', 'settings', 'main', { staffVersion: 1 }]);
     await db.batch(cleanup);
@@ -168,8 +168,8 @@ export async function seedIfNeeded() {
     if (/^c\d+$/.test(old.id) && n > cats.length) ops.push(['remove', 'categories', old.id]);
   }
   ops.push(s
-    ? ['update', 'settings', 'main', { menuVersion: 2, staffVersion: 1 }]
-    : ['set', 'settings', 'main', { ...DEFAULT_SETTINGS, ...(db.mode === 'local' ? { pins: { order: hashPin('111111'), cashier: hashPin('999999') } } : {}), menuVersion: 2, staffVersion: 1 }]);
+    ? ['update', 'settings', 'main', { menuVersion: 3, staffVersion: 1 }]
+    : ['set', 'settings', 'main', { ...DEFAULT_SETTINGS, ...(db.mode === 'local' ? { pins: { order: hashPin('111111'), cashier: hashPin('999999') } } : {}), menuVersion: 3, staffVersion: 1 }]);
   await db.batch(ops);
   return !s;
 }
