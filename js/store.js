@@ -25,7 +25,7 @@ export const DEFAULT_SETTINGS = {
 export const store = {
   user: null,
   settings: structuredClone(DEFAULT_SETTINGS),
-  areas: [], tables: [], categories: [], menu: [], staff: [],
+  areas: [], tables: [], categories: [], menu: [],
   bills: {},          // bill đang mở (open / waiting)
   todayBills: [],     // bill đã đóng hôm nay (thu ngân)
   loaded: new Set(),
@@ -59,7 +59,7 @@ export function startSync() {
   const w = (col, key, sort = byOrder) => db.watch(col, [], list => { store[key] = list.sort(sort); store.loaded.add(key); emit(key); });
   unsubs.push(
     db.watchDoc('settings', 'main', d => { store.settings = deepMerge(DEFAULT_SETTINGS, d); store.loaded.add('settings'); store.settingsExists = !!d; emit('settings'); }),
-    w('areas', 'areas'), w('tables', 'tables'), w('categories', 'categories'), w('menu', 'menu'), w('staff', 'staff'),
+    w('areas', 'areas'), w('tables', 'tables'), w('categories', 'categories'), w('menu', 'menu'),
     db.watch('bills', [['status', 'in', ['open', 'waiting']]], list => {
       const m = {}; list.forEach(b => (m[b.id] = b)); store.bills = m; store.loaded.add('bills'); emit('bills');
     }),
@@ -74,12 +74,16 @@ export function stopSync() { unsubs.forEach(u => u && u()); unsubs = []; }
 export const tableById = id => store.tables.find(t => t.id === id);
 export const billOfTable = t => (t?.billId ? store.bills[t.billId] : null);
 export const menuById = id => store.menu.find(m => m.id === id);
-export const staffOf = role => store.staff.filter(s => s.role === role && s.active !== false);
-
 /* ---------- Khởi tạo dữ liệu ban đầu ---------- */
 export async function seedIfNeeded() {
   const s = await db.get('settings', 'main');
-  if (s?.menuVersion >= 2) return false;
+  if (s?.menuVersion >= 2 && s?.staffVersion >= 1) return false;
+  if (s?.menuVersion >= 2) {
+    const cleanup = (await db.list('staff')).map(x => ['remove', 'staff', x.id]);
+    cleanup.push(['update', 'settings', 'main', { staffVersion: 1 }]);
+    await db.batch(cleanup);
+    return false;
+  }
   const ops = [];
   if (!s) {
     const settings = structuredClone(DEFAULT_SETTINGS);
@@ -91,8 +95,6 @@ export async function seedIfNeeded() {
     for (let i = 1; i <= 10; i++) {
       ops.push(['set', 'tables', 't' + String(i).padStart(2, '0'), { name: 'Bàn ' + i, areaId: i <= 6 ? 'a1' : 'a2', order: i, status: 'empty', billId: null }]);
     }
-    [['Lan', 'order'], ['Tuấn', 'order'], ['Mai', 'order'], ['Hùng', 'order'], ['Hoa', 'cashier']]
-      .forEach(([name, role], i) => ops.push(['set', 'staff', 's' + (i + 1), { name, role, active: true, order: i + 1 }]));
   }
   const cats = [
     ['c1', 'Các món khai vị'], ['c2', 'Các món bò'], ['c3', 'Đặc biệt Quán Lá'],
@@ -154,6 +156,7 @@ export async function seedIfNeeded() {
     ['c14', 'Cá Chạch Đồng 100% Giòn Mắm', 100000], ['c14', 'Cá Tai Tượng + Cá Lóc + Cá Chẽm (Đặt Trước)', null, 'Thời Giá'],
   ];
   menu.forEach(([cat, name, price, priceLabel, priceNote], i) => ops.push(['set', 'menu', 'm' + (i + 1), { name, price, priceLabel: priceLabel || '', priceNote: priceNote || '', categoryId: cat, available: true, order: i + 1 }]));
+  for (const old of await db.list('staff')) ops.push(['remove', 'staff', old.id]);
   // Remove only obsolete seeded IDs beyond the current catalog. Existing
   // documents that are being updated are overwritten once in this batch.
   for (const old of await db.list('menu')) {
@@ -165,8 +168,8 @@ export async function seedIfNeeded() {
     if (/^c\d+$/.test(old.id) && n > cats.length) ops.push(['remove', 'categories', old.id]);
   }
   ops.push(s
-    ? ['update', 'settings', 'main', { menuVersion: 2 }]
-    : ['set', 'settings', 'main', { ...DEFAULT_SETTINGS, ...(db.mode === 'local' ? { pins: { order: hashPin('111111'), cashier: hashPin('999999') } } : {}), menuVersion: 2 }]);
+    ? ['update', 'settings', 'main', { menuVersion: 2, staffVersion: 1 }]
+    : ['set', 'settings', 'main', { ...DEFAULT_SETTINGS, ...(db.mode === 'local' ? { pins: { order: hashPin('111111'), cashier: hashPin('999999') } } : {}), menuVersion: 2, staffVersion: 1 }]);
   await db.batch(ops);
   return !s;
 }

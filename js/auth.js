@@ -11,17 +11,16 @@ export function restore() {
   try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch {}
   if (!s) return null;
   if (db.mode === 'firebase' && (!db.isAuthed() || db.authRole() !== s.role)) { localStorage.removeItem(KEY); return null; }
-  store.user = s;
-  return s;
+  const session = { ...s, name: ROLE_NAME[s.role] || s.role };
+  store.user = session;
+  localStorage.setItem(KEY, JSON.stringify(session));
+  return session;
 }
 export async function verifyPin(role, pin) {
   await db.signIn(role, pin);
-  store.user = { role, name: '', at: Date.now() };
-  startSync();
-}
-export function setName(name) {
-  store.user = { ...store.user, name };
+  store.user = { role, name: ROLE_NAME[role] || role, at: Date.now() };
   localStorage.setItem(KEY, JSON.stringify(store.user));
+  startSync();
 }
 export async function logout() {
   stopSync(); resetWatch();

@@ -71,10 +71,9 @@ function userMenu() {
     body: `<div class="row" style="gap:12px"><span class="avatar ${u.role}" style="width:48px;height:48px;font-size:18px">${esc(initials(u.name))}</span>
       <div><b style="font-size:17px">${esc(u.name)}</b><div class="muted small">Vai trò: ${ROLE_NAME[u.role]}</div></div></div>
       <div class="notice mt">${icon('info')}<div>Dữ liệu: <b>${db.mode === 'local' ? 'Chế độ demo (lưu trên trình duyệt này)' : 'Firebase – đồng bộ mọi thiết bị'}</b></div></div>`,
-    foot: `<button class="btn" data-sw>${icon('users')} Đổi người dùng</button><button class="btn btn-danger-soft" data-lo>${icon('logout')} Đăng xuất</button>`,
+    foot: `<button class="btn btn-danger-soft" data-lo>${icon('logout')} Đăng xuất</button>`,
     onMount: api => {
       api.$('[data-lo]').onclick = () => { api.close(); logout(); };
-      api.$('[data-sw]').onclick = () => { api.close(); login.pickName(true); };
     },
   });
 }
@@ -82,9 +81,9 @@ function userMenu() {
 async function route() {
   const { name, params } = parse();
   const user = store.user;
-  if (!user?.name && name !== 'login') return go('login');
-  if (user?.name && name === 'login') return go('tables');
-  if (user?.name && !ALLOWED[user.role].includes(name)) return go('tables');
+  if (!user?.role && name !== 'login') return go('login');
+  if (user?.role && name === 'login') return go('tables');
+  if (user?.role && !ALLOWED[user.role].includes(name)) return go('tables');
 
   try { current?.cleanup?.(); } catch {}
   const page = ROUTES[name] || tables;

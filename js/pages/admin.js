@@ -8,7 +8,7 @@ import { sendAuto } from '../zalo.js';
 import { APP_VERSION } from '../config.js';
 
 let el, tab = 'menu';
-const TABS = [['menu', 'Thực đơn', 'utensils'], ['tables', 'Bàn & khu vực', 'grid'], ['staff', 'Nhân viên', 'users'], ['settings', 'Cài đặt', 'settings']];
+const TABS = [['menu', 'Thực đơn', 'utensils'], ['tables', 'Bàn & khu vực', 'grid'], ['settings', 'Cài đặt', 'settings']];
 const nextOrder = list => Math.max(0, ...list.map(x => x.order || 0)) + 1;
 
 /* ================= THỰC ĐƠN ================= */
@@ -78,22 +78,6 @@ async function tableForm(t = {}) {
   if (t.id) await db.update('tables', t.id, res);
   else await db.add('tables', { ...res, order: nextOrder(store.tables), status: 'empty', billId: null });
   toast('Đã lưu bàn');
-}
-
-/* ================= NHÂN VIÊN ================= */
-function staffHTML() {
-  const sec = (role, title) => `<div class="card"><div class="card-h"><h3>${title}</h3><button class="btn btn-sm btn-soft" data-a="staffAdd" data-role="${role}">${icon('plus')} Thêm</button></div>
-    <div class="list" style="margin-top:8px">${store.staff.filter(s => s.role === role).map(s => `<div class="admin-row"><span class="avatar ${role}">${esc(s.name[0] || '?')}</span>
-      <div class="ar-main"><b>${esc(s.name)}</b></div><button class="icon-btn sm" data-a="staffEdit" data-id="${s.id}">${icon('edit')}</button><button class="icon-btn sm danger" data-a="staffDel" data-id="${s.id}">${icon('trash')}</button></div>`).join('') || '<div class="admin-row muted small">Chưa có</div>'}</div></div>`;
-  return `<div class="settings-grid">
-    ${sec('order', 'Nhân viên Order')}
-    ${sec('cashier', 'Thu Ngân')}
-    <div class="card card-pad stack"><h3>${icon('user')} Mã PIN đăng nhập</h3>
-      <p class="small muted">Order dùng chung 1 mã PIN, sau đó chọn tên. Mã PIN gồm 6 số.</p>
-      ${db.mode === 'local' ? `<div class="btn-row"><button class="btn" data-a="pin" data-role="order">Đổi PIN Order</button><button class="btn" data-a="pin" data-role="cashier">Đổi PIN Thu Ngân</button></div>`
-        : `<button class="btn" data-a="pin" data-role="cashier">Đổi PIN Thu Ngân (tài khoản đang đăng nhập)</button>
-           <div class="notice">${icon('info')}<div>Đổi PIN Order: Firebase Console → Authentication → chọn tài khoản Order → Reset password.</div></div>`}
-    </div></div>`;
 }
 
 /* ================= CÀI ĐẶT ================= */
@@ -169,7 +153,7 @@ function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; whil
 
 /* ================= RENDER ================= */
 function render() {
-  const body = tab === 'menu' ? menuHTML() : tab === 'tables' ? tablesHTML() : tab === 'staff' ? staffHTML() : settingsHTML();
+  const body = tab === 'menu' ? menuHTML() : tab === 'tables' ? tablesHTML() : settingsHTML();
   el.innerHTML = `<div class="page-head"><h1>Quản lý</h1></div>
     <div class="chips admin-tabs">${TABS.map(([k, l, i]) => `<a class="chip ${tab === k ? 'active' : ''}" href="#/admin/${k}">${icon(i)} ${l}</a>`).join('')}</div>
     <div id="abody">${body}</div>`;
@@ -207,10 +191,6 @@ async function onAction(a, t) {
       await db.batch(ops); toast(`Đã thêm ${n} bàn`); return;
     }
     case 'tableDel': { const x = find(store.tables); if (billOfTable(x)) return toast('Bàn đang có khách, không xóa được', 'warn'); if (await confirmBox(`Xóa <b>${esc(x.name)}</b>?`, { danger: true, okText: 'Xóa' })) await db.remove('tables', id); return; }
-    /* nhân viên */
-    case 'staffAdd': { const n = await promptBox({ title: t.dataset.role === 'order' ? 'Thêm nhân viên Order' : 'Thêm Thu Ngân', placeholder: 'Tên', required: true }); if (n) await db.add('staff', { name: n, role: t.dataset.role, active: true, order: nextOrder(store.staff) }); return; }
-    case 'staffEdit': { const x = find(store.staff); const n = await promptBox({ title: 'Đổi tên', value: x.name, required: true }); if (n) await db.update('staff', id, { name: n }); return; }
-    case 'staffDel': { const x = find(store.staff); if (await confirmBox(`Xóa <b>${esc(x.name)}</b>?`, { danger: true })) await db.remove('staff', id); return; }
     case 'pin': {
       const role = t.dataset.role;
       const p = await promptBox({ title: `Đổi mã PIN ${role === 'order' ? 'Order' : 'Thu Ngân'}`, label: 'Mã PIN mới (6 số)', type: 'number', required: true });
