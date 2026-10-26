@@ -1,0 +1,48 @@
+rules_version = '2';
+// Luật bảo mật Firestore cho Quán Lá
+// - Thu Ngân: toàn quyền
+// - Order: chỉ mở bàn, gọi thêm món, yêu cầu tính tiền, chuyển bàn, báo hết món
+//   KHÔNG được: sửa giá, xóa món đã gửi, thu tiền/chốt bill, sửa cài đặt, xem bộ đếm
+// Nhớ đổi email nếu bạn đổi trong js/config.js
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn()  { return request.auth != null; }
+    function isCashier() { return signedIn() && request.auth.token.email == 'thungan@quanla.app'; }
+    function isOrder()   { return signedIn() && request.auth.token.email == 'order@quanla.app'; }
+    function staff()     { return isCashier() || isOrder(); }
+    function onlyKeys(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+
+    match /shops/{shopId} {
+      match /settings/{id}   { allow read: if staff(); allow write: if isCashier(); }
+      match /staff/{id}      { allow read: if staff(); allow write: if isCashier(); }
+      match /areas/{id}      { allow read: if staff(); allow write: if isCashier(); }
+      match /categories/{id} { allow read: if staff(); allow write: if isCashier(); }
+      match /counters/{id}   { allow read, write: if isCashier(); }
+
+      match /menu/{id} {
+        allow read: if staff();
+        allow create, delete: if isCashier();
+        allow update: if isCashier() || (isOrder() && onlyKeys(['available']));
+      }
+
+      match /tables/{id} {
+        allow read: if staff();
+        allow create, delete: if isCashier();
+        allow update: if isCashier() || (isOrder() && onlyKeys(['status', 'billId', 'openedAt']));
+      }
+
+      match /bills/{id} {
+        allow read: if staff();
+        allow create: if isCashier() || (isOrder() && request.resource.data.status == 'open');
+        allow update: if isCashier() || (
+          isOrder()
+          && resource.data.status in ['open', 'waiting']
+          && request.resource.data.status in ['open', 'waiting']
+          && onlyKeys(['items', 'rounds', 'staff', 'status', 'requestedAt', 'requestedBy', 'updatedAt', 'lastBy', 'tableId', 'tableName'])
+          && request.resource.data.items.size() >= resource.data.items.size()
+        );
+        allow delete: if false;
+      }
+    }
+  }
+}

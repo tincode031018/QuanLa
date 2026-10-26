@@ -1,0 +1,132 @@
+/* ===== Quán Lá – base: biến màu, reset, chữ ===== */
+:root {
+  --brand: #1f7a4d;
+  --brand-600: #17653f;
+  --brand-700: #114d30;
+  --brand-50: #eaf6ef;
+  --brand-100: #cfeadb;
+  --accent: #f59e0b;
+  --accent-600: #d97f06;
+  --accent-50: #fff6e5;
+  --danger: #e5484d;
+  --danger-50: #fdeeee;
+  --info: #2563eb;
+  --info-50: #eaf1ff;
+
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --surface-2: #f7f9f8;
+  --line: #e2e8e4;
+  --text: #16201b;
+  --muted: #6a756f;
+
+  --radius: 16px;
+  --radius-sm: 11px;
+  --shadow-sm: 0 1px 2px rgba(15, 30, 22, .06);
+  --shadow: 0 1px 2px rgba(15, 30, 22, .05), 0 6px 18px rgba(15, 30, 22, .07);
+  --shadow-lg: 0 18px 50px rgba(15, 30, 22, .22);
+
+  --header-h: 56px;
+  --nav-h: 62px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1512;
+    --surface: #17201b;
+    --surface-2: #1d2822;
+    --line: #2a3730;
+    --text: #e8efeb;
+    --muted: #93a29a;
+    --brand-50: #173326;
+    --brand-100: #1f4a35;
+    --accent-50: #3a2a0c;
+    --danger-50: #3b1717;
+    --info-50: #172540;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font: 15px/1.45 var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+h1, h2, h3, h4, p { margin: 0; }
+h1 { font-size: 22px; font-weight: 750; }
+h2 { font-size: 18px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 7px; }
+h3 svg.i { width: 18px; height: 18px; color: var(--muted); }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+button:disabled { cursor: not-allowed; opacity: .5; }
+img, svg { display: block; max-width: 100%; }
+svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 45%, transparent); outline-offset: 2px; }
+::selection { background: var(--brand-100); }
+
+/* Tiện ích */
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.xs { font-size: 12px; }
+.bold { font-weight: 700; }
+.right { text-align: right; }
+.center { text-align: center; }
+.nowrap { white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; }
+.grow { flex: 1; min-width: 0; }
+.row { display: flex; align-items: center; gap: 8px; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+.stack-sm { display: flex; flex-direction: column; gap: 6px; }
+.wrap { flex-wrap: wrap; }
+.hidden { display: none !important; }
+.ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.text-brand { color: var(--brand); }
+.text-accent { color: var(--accent-600); }
+.text-danger { color: var(--danger); }
+.mt { margin-top: 12px; }
+.mb { margin-bottom: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ===== In máy in nhiệt 80mm ===== */
+#print-area { display: none; }
+@media print {
+  @page { size: 80mm auto; margin: 0; }
+  html, body { background: #fff !important; }
+  body > *:not(#print-area) { display: none !important; }
+  #print-area {
+    display: block; width: 80mm; padding: 3mm 4mm 6mm; color: #000;
+    font: 12.5px/1.35 "Courier New", Consolas, monospace;
+  }
+  #print-area * { color: #000 !important; }
+}
+.r-c { text-align: center; }
+.r-shop { font-size: 18px; font-weight: 800; letter-spacing: .5px; }
+.r-title { font-size: 15px; font-weight: 800; margin: 6px 0 2px; }
+.r-big { font-size: 22px; font-weight: 800; }
+.r-hr { border-top: 1px dashed #000; margin: 6px 0; }
+.r-row { display: flex; justify-content: space-between; gap: 8px; }
+.r-total { font-size: 16px; font-weight: 800; }
+.r-tb { width: 100%; border-collapse: collapse; }
+.r-tb td { padding: 2px 0; vertical-align: top; }
+.r-tb .q { width: 26px; text-align: center; }
+.r-tb .m { text-align: right; white-space: nowrap; padding-left: 6px; }
+.r-note { font-size: 11.5px; font-style: italic; padding-left: 8px; }
+.r-k-item { font-size: 17px; font-weight: 800; margin: 4px 0; }
+.r-k-note { font-size: 14px; padding-left: 26px; }
+.r-qr { width: 46mm; margin: 6px auto 2px; }
