@@ -1,61 +1,43 @@
 /* ===== Quán Lá – base: biến màu, reset, chữ ===== */
 :root {
-  --brand: #176b50;
-  --brand-600: #125840;
-  --brand-700: #0e4533;
-  --brand-50: #eaf4ef;
-  --brand-100: #cfe3d8;
-  --accent: #d99a32;
-  --accent-600: #b5791c;
-  --accent-50: #fbf3e5;
-  --danger: #e5484d;
-  --danger-50: #fdeeee;
+  --brand: #0878f9;
+  --brand-600: #0066df;
+  --brand-700: #0759bd;
+  --brand-50: #edf5ff;
+  --brand-100: #cfe3ff;
+  --accent: #d97706;
+  --accent-600: #b45309;
+  --accent-50: #fffbeb;
+  --danger: #dc2626;
+  --danger-50: #fef2f2;
   --info: #2563eb;
   --info-50: #eaf1ff;
 
-  --bg: #f4f6f5;
+  --bg: #f8faf9;
   --surface: #ffffff;
-  --surface-2: #f7f9f8;
-  --line: #dfe7e2;
-  --text: #17231d;
-  --muted: #697770;
+  --surface-2: #f5f6f7;
+  --line: #e5e7eb;
+  --text: #111827;
+  --muted: #6b7280;
 
-  --radius: 18px;
-  --radius-sm: 12px;
-  --shadow-sm: 0 1px 2px rgba(20, 43, 31, .04), 0 3px 10px rgba(20, 43, 31, .035);
-  --shadow: 0 2px 5px rgba(20, 43, 31, .04), 0 10px 28px rgba(20, 43, 31, .055);
-  --shadow-lg: 0 18px 52px rgba(16, 35, 25, .18);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 1px 3px rgba(17, 24, 39, .045);
+  --shadow: 0 4px 14px rgba(17, 24, 39, .07);
+  --shadow-lg: 0 12px 32px rgba(17, 24, 39, .12);
 
   --header-h: 56px;
   --nav-h: 62px;
   --safe-b: env(safe-area-inset-bottom, 0px);
-  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1512;
-    --surface: #17201b;
-    --surface-2: #1d2822;
-    --line: #2a3730;
-    --text: #e8efeb;
-    --muted: #93a29a;
-    --brand-50: #173326;
-    --brand-100: #1f4a35;
-    --accent-50: #3a2a0c;
-    --danger-50: #3b1717;
-    --info-50: #172540;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 6px 18px rgba(0, 0, 0, .25);
-    color-scheme: dark;
-  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  font: 15px/1.45 var(--font);
+  font: 14px/1.5 var(--font);
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
@@ -63,9 +45,9 @@ body {
   overscroll-behavior-y: none;
 }
 h1, h2, h3, h4, p { margin: 0; }
-h1 { font-size: 22px; font-weight: 700; letter-spacing: -.25px; }
-h2 { font-size: 18px; font-weight: 650; letter-spacing: -.15px; }
-h3 { font-size: 15px; font-weight: 650; display: flex; align-items: center; gap: 7px; }
+h1 { font-size: 22px; font-weight: 600; letter-spacing: -.25px; }
+h2 { font-size: 18px; font-weight: 600; letter-spacing: -.15px; }
+h3 { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
 h3 svg.i { width: 18px; height: 18px; color: var(--muted); }
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -78,13 +60,13 @@ svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor;
 
 /* Refined type hierarchy and focus treatment */
 .muted { color: var(--muted); }
-strong, b { letter-spacing: -.08px; }
+strong, b { font-weight: 500; letter-spacing: -.08px; }
 
 /* Tiện ích */
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
 .xs { font-size: 12px; }
-.bold { font-weight: 700; }
+.bold { font-weight: 600; }
 .right { text-align: right; }
 .center { text-align: center; }
 .nowrap { white-space: nowrap; }
@@ -110,7 +92,7 @@ strong, b { letter-spacing: -.08px; }
 /* ===== In máy in nhiệt 80mm ===== */
 #print-area { display: none; }
 @media print {
-  @page { size: 80mm auto; margin: 0; }
+  @page { size: var(--print-page-size, 80mm auto); margin: 0; }
   html, body { background: #fff !important; }
   body > *:not(#print-area) { display: none !important; }
   #print-area {

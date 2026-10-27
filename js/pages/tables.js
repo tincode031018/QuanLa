@@ -13,11 +13,11 @@ function tableCard(t) {
   const min = b ? minutesSince(b.openedAt) : 0;
   const long = b && min >= (store.settings.longSitMinutes || 120);
   const isNew = b && store.unseen.has(b.id) && store.user.role === 'cashier';
-  return `<button class="tcard st-${st} ${long ? 'long' : ''}" data-id="${t.id}">
-    ${isNew ? '<span class="new-dot"></span>' : ''}
-    <span class="tc-name">${esc(t.name)}</span>
+  return `<button class="tcard st-${st} ${long ? 'long' : ''}" data-id="${t.id}" aria-label="${esc(t.name)}: ${st === 'empty' ? 'trống' : st === 'waiting' ? 'chờ thanh toán' : 'đang phục vụ'}">
+    ${isNew ? '<span class="new-dot" aria-label="Có cập nhật mới"></span>' : ''}
+    <span class="tc-top"><span class="tc-name">${esc(t.name)}</span></span>
     <span class="tc-mid">${b ? (c.count ? short(c.total) : 'Mới mở') : 'Trống'}</span>
-    <span class="tc-bot">${!b ? '&nbsp;' : st === 'waiting' ? `<b class="text-accent">${icon('cash')} Chờ thanh toán</b>` : `${icon('clock')}${dur(min)} · ${c.count} món`}</span>
+    <span class="tc-bot">${!b ? 'Sẵn sàng' : st === 'waiting' ? `<b class="text-accent">${icon('cash')} Chờ thanh toán</b>` : `${icon('clock')}${dur(min)} · ${c.count} món`}</span>
   </button>`;
 }
 

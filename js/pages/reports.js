@@ -75,7 +75,7 @@ function render() {
     <div class="settings-grid mt">
       <div class="card card-pad"><h3>Doanh thu theo ${from === to ? 'giờ' : 'ngày'}</h3>${chart(r)}</div>
       <div class="card card-pad"><h3>Món bán chạy</h3>
-        ${r.top.length ? r.top.slice(0, 10).map((t, i) => `<div class="hbar"><span><b>${i + 1}.</b> ${esc(t.name)}</span><span class="small"><b>${t.qty}</b> · ${short(t.revenue)}</span><div class="track"><div class="fill" style="width:${t.qty / maxTop * 100}%"></div></div></div>`).join('') : '<div class="empty small">Chưa có dữ liệu</div>'}
+        ${r.top.length ? r.top.slice(0, 10).map((t, i) => { const stars = Math.max(1, Math.ceil(t.qty / maxTop * 5)); return `<div class="hbar"><span class="top-item-name"><b>${i + 1}.</b> ${esc(t.name)}</span><span class="small"><b>${t.qty}</b> · ${short(t.revenue)}</span><span class="top-item-stars" role="img" aria-label="${stars} trên 5 sao">${'★'.repeat(stars)}<span>${'☆'.repeat(5 - stars)}</span></span></div>`; }).join('') : '<div class="empty small">Chưa có dữ liệu</div>'}
       </div>
       <div class="card card-pad"><h3>Nhân viên Order (số món)</h3>
         ${staff.length ? staff.map(([n, v]) => `<div class="row-between" style="padding:8px 0;border-bottom:1px dashed var(--line)"><span>${esc(n)}</span><b>${v} món</b></div>`).join('') : '<div class="empty small">Chưa có dữ liệu</div>'}

@@ -203,6 +203,8 @@ export function reportPrintHTML(r, label) {
 
 export async function printHTML(html) {
   const el = document.getElementById('print-area');
+  const paperSize = store.settings.print?.paperSize === 'a4' ? '210mm 297mm' : '80mm auto';
+  document.documentElement.style.setProperty('--print-page-size', paperSize);
   el.innerHTML = html;
   const imgs = [...el.querySelectorAll('img')];
   await Promise.race([
@@ -210,6 +212,7 @@ export async function printHTML(html) {
     new Promise(r => setTimeout(r, 2500)),
   ]);
   window.print();
+  document.documentElement.style.removeProperty('--print-page-size');
 }
 
 /* ---------- ẢNH hóa đơn (vẽ canvas – không cần thư viện) ---------- */

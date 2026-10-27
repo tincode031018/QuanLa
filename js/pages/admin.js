@@ -10,7 +10,7 @@ import { APP_VERSION } from '../config.js';
 let el, tab = 'menu', menuPage = 0, menuQuery = '';
 const TABS = [['menu', 'Thực đơn', 'utensils'], ['tables', 'Bàn & khu vực', 'grid'], ['settings', 'Cài đặt', 'settings']];
 const nextOrder = list => Math.max(0, ...list.map(x => x.order || 0)) + 1;
-const categoryHue = index => `hsl(${(145 + index * 31) % 360} 48% 36%)`;
+const categoryHue = index => `hsl(${(210 + index * 7) % 360} 42% 42%)`;
 
 /* ================= THỰC ĐƠN ================= */
 function menuPageData() {
@@ -25,6 +25,8 @@ function menuHTML() {
   const { matches, pages, orphan } = menuPageData();
   menuPage = Math.max(0, Math.min(menuPage, pages.length - 1));
   const page = pages[menuPage];
+  const shortcutStart = Math.max(0, Math.min(menuPage - 3, pages.length - 7));
+  const visibleCategories = pages.slice(shortcutStart, shortcutStart + 7);
   const group = (c, items) => {
     const hue = categoryHue(Math.max(0, cats.findIndex(x => x.id === c?.id)));
     return `<div class="card mb admin-menu-card">
@@ -37,16 +39,17 @@ function menuHTML() {
       <button class="icon-btn sm danger" data-a="itemDel" data-id="${m.id}">${icon('trash')}</button>
     </div>`).join('') || '<div class="admin-row muted small">Chưa có món</div>'}</div></div>`;
   };
-  return `<div class="row mb wrap"><button class="btn btn-primary" data-a="itemAdd">${icon('plus')} Thêm món</button><button class="btn" data-a="catAdd">${icon('layers')} Thêm danh mục</button>
-    <div class="category-shortcuts">${pages.filter(c => c.id).map(c => { const i = cats.findIndex(x => x.id === c.id); return `<button class="category-shortcut ${page?.id === c.id ? 'active' : ''}" style="--category-color:${categoryHue(i)}" data-a="catPage" data-id="${c.id}">${esc(c.name)}</button>`; }).join('')}</div>
+  return `<div class="menu-admin-toolbar mb"><div class="menu-admin-actions"><button class="btn btn-primary" data-a="itemAdd">${icon('plus')} Thêm món</button><button class="btn btn-primary" data-a="catAdd">${icon('layers')} Thêm danh mục</button></div>
+    <div class="category-shortcuts">${visibleCategories.filter(c => c.id).map(c => { const i = cats.findIndex(x => x.id === c.id); return `<button class="category-shortcut ${page?.id === c.id ? 'active' : ''}" style="--category-color:${categoryHue(i)}" data-a="catPage" data-id="${c.id}">${esc(c.name)}</button>`; }).join('')}</div>
     </div>
     <div class="searchbox menu-admin-search">${icon('search')}<input class="input" id="menuSearch" type="search" placeholder="Tìm món trong toàn bộ thực đơn…" value="${esc(menuQuery)}" autocomplete="off"></div>
+    ${page ? group(page.id ? cats.find(c => c.id === page.id) : null, page.id ? matches.filter(m => m.categoryId === page.id) : orphan) : menuQuery ? '<div class="empty">Không tìm thấy món phù hợp</div>' : '<div class="empty">Chưa có danh mục thực đơn</div>'}
     ${pages.length > 1 ? `<div class="menu-page-nav admin-menu-page mb">
       <button class="icon-btn" data-a="menuPrev" aria-label="Danh mục trước" ${menuPage <= 0 ? 'disabled' : ''}>${icon('back')}</button>
       <div class="menu-page-label"><small>${menuPage + 1} / ${pages.length}</small></div>
       <button class="icon-btn" data-a="menuNext" aria-label="Danh mục tiếp" ${menuPage >= pages.length - 1 ? 'disabled' : ''}>${icon('next')}</button>
     </div>` : ''}
-    ${page ? group(page.id ? cats.find(c => c.id === page.id) : null, page.id ? matches.filter(m => m.categoryId === page.id) : orphan) : menuQuery ? '<div class="empty">Không tìm thấy món phù hợp</div>' : '<div class="empty">Chưa có danh mục thực đơn</div>'}`;
+    `;
 }
 async function itemForm(m = {}) {
   const res = await modal({
@@ -106,7 +109,7 @@ function settingsHTML() {
   const s = sdraft;
   s.address ||= '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long';
   const z = s.zalo, b = s.bank;
-  return `<div class="settings-grid">
+  return `<div class="settings-grid settings-columns">
     <div class="card card-pad stack"><h3>${icon('store')} Thông tin quán</h3>
       <label class="field"><span>Tên quán</span><input class="input" data-k="shopName" value="${esc(s.shopName)}"></label>
       <label class="field"><span>Khẩu hiệu</span><input class="input" data-k="slogan" value="${esc(s.slogan || '')}"></label>
@@ -160,8 +163,7 @@ function settingsHTML() {
       <div class="xs muted">Phiên bản ${APP_VERSION} · ${db.mode === 'local' ? 'Chế độ demo' : 'Firebase'}</div>
     </div>
   </div>
-  <div style="position:sticky;bottom:calc(var(--nav-h) + 12px);margin-top:16px;display:flex;justify-content:flex-end">
-    <button class="btn btn-primary btn-lg" data-a="saveSettings" style="box-shadow:var(--shadow-lg)">${icon('check')} Lưu cài đặt</button></div>`;
+  <div class="settings-savebar"><button class="btn btn-primary" data-a="saveSettings">${icon('check')} Lưu cài đặt</button></div>`;
 }
 function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
 

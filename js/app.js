@@ -7,17 +7,17 @@ import { esc, initials } from './utils.js';
 import { unlockAudio, watchBills } from './notify.js';
 import { APP_VERSION } from './config.js';
 
-import login from './pages/login.js?v=1.0.26';
-import tables from './pages/tables.js?v=1.0.26';
-import order from './pages/order.js?v=1.0.26';
-import orders from './pages/orders.js?v=1.0.26';
-import bill from './pages/cashier.js?v=1.0.26';
-import history from './pages/history.js?v=1.0.26';
-import reports from './pages/reports.js?v=1.0.26';
-import admin from './pages/admin.js?v=1.0.26';
-import soldout from './pages/soldout.js?v=1.0.26';
-import printer from './pages/printer.js?v=1.0.26';
-import inventory from './pages/inventory.js?v=1.0.26';
+import login from './pages/login.js?v=1.0.37';
+import tables from './pages/tables.js?v=1.0.37';
+import order from './pages/order.js?v=1.0.37';
+import orders from './pages/orders.js?v=1.0.37';
+import bill from './pages/cashier.js?v=1.0.37';
+import history from './pages/history.js?v=1.0.37';
+import reports from './pages/reports.js?v=1.0.37';
+import admin from './pages/admin.js?v=1.0.37';
+import soldout from './pages/soldout.js?v=1.0.37';
+import printer from './pages/printer.js?v=1.0.37';
+import inventory from './pages/inventory.js?v=1.0.37';
 
 const ROUTES = { login, tables, order, orders, bill, history, reports, admin, soldout, printer, inventory };
 const NAV = {

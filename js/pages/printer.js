@@ -2,7 +2,7 @@ import { db } from '../db.js';
 import { store } from '../store.js';
 import { icon, toast, setTitle } from '../ui.js';
 import { esc } from '../utils.js';
-import { billPrintHTML, printHTML } from '../bill.js?v=1.0.23';
+import { billPrintHTML, printHTML } from '../bill.js?v=1.0.31';
 
 let el, draft;
 
@@ -11,6 +11,14 @@ function render() {
   el.innerHTML = `<div class="page-head"><h1>Máy in</h1></div>
     <p class="small muted mb">Cấu hình in hóa đơn và phiếu bếp cho máy in nhiệt 80mm.</p>
     <div class="settings-grid">
+      <div class="card card-pad stack">
+        <h3>${icon('receipt')} Khổ giấy</h3>
+        <label class="field"><span>Khổ giấy in</span><select class="input" data-k="paperSize">
+          <option value="80mm" ${p.paperSize !== 'a4' ? 'selected' : ''}>80mm · Máy in hóa đơn nhiệt</option>
+          <option value="a4" ${p.paperSize === 'a4' ? 'selected' : ''}>A4 · Máy in văn phòng</option>
+        </select></label>
+        <div class="xs muted">Thiết lập này điều chỉnh bản xem trước và kích thước nội dung. Nếu hộp thoại máy in vẫn chọn khổ khác, hãy chọn 80mm trong mục “Khổ giấy” của trình điều khiển máy in.</div>
+      </div>
       <div class="card card-pad stack">
         <h3>${icon('print')} Tự động in</h3>
         <div class="row-between"><span><b>Tự in hóa đơn</b><div class="xs muted">Sau khi Thu ngân hoàn tất thanh toán</div></span><label class="switch"><input type="checkbox" data-k="autoBill" ${p.autoBill ? 'checked' : ''}><span></span></label></div>
@@ -44,10 +52,14 @@ export default {
       } else if (t.dataset.a === 'test') {
         const original = store.settings.print;
         store.settings.print = { ...draft };
+        document.documentElement.style.setProperty('--print-page-size', draft.paperSize === 'a4' ? '210mm 297mm' : '80mm auto');
         try {
           await printHTML(billPrintHTML({ tableName: 'Bàn thử', code: 'IN-THU', openedAt: Date.now() - 1800000, closedAt: Date.now(), closedBy: store.user.name,
             items: [{ menuId: 'test-1', name: 'Món kiểm tra máy in', price: 45000, qty: 1 }], pay: { method: 'cash', received: 50000, cash: 50000 } }));
-        } finally { store.settings.print = original; }
+        } finally {
+          store.settings.print = original;
+          document.documentElement.style.removeProperty('--print-page-size');
+        }
       }
     };
     el.addEventListener('change', onChange);
