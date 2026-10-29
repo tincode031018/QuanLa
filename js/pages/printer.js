@@ -2,7 +2,7 @@ import { db } from '../db.js';
 import { store } from '../store.js';
 import { icon, toast, setTitle } from '../ui.js';
 import { esc } from '../utils.js';
-import { billPrintHTML, printHTML } from '../bill.js?v=1.0.31';
+import { billPrintHTML, printHTML } from '../bill.js?v=1.0.38';
 
 let el, draft;
 

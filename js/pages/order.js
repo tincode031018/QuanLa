@@ -2,7 +2,7 @@
 import { store, tableById, billOfTable, menuById } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, pickBox, setTitle } from '../ui.js';
 import { esc, money, norm, fmtTime, minutesSince, dur } from '../utils.js';
-import { calc, rounds, kitchenText, kitchenPrintHTML, sumItems, itemCount } from '../bill.js?v=1.0.23';
+import { calc, rounds, kitchenText, kitchenPrintHTML, sumItems, itemCount } from '../bill.js?v=1.0.38';
 import { sendItems, requestPayment, reopenBill, moveTable, setAvailable } from '../actions.js';
 import { deliver } from '../zalo.js';
 
@@ -213,6 +213,22 @@ async function send() {
     cart = []; saveCart();
     setCartOpen(false);
     toast(`Đã gửi ${itemCount(res.items)} món · ${res.tableName}`);
+    const matches = new Map();
+    for (const other of Object.values(store.bills)) {
+      if (other.tableId === tableId || !['open', 'waiting'].includes(other.status)) continue;
+      for (const it of other.items || []) {
+        if (it.void) continue;
+        const key = `${norm(it.name)}|${norm(it.note || '')}`;
+        if (res.items.some(added => `${norm(added.name)}|${norm(added.note || '')}` === key)) {
+          const entry = matches.get(key) || { name: it.name, tables: new Set() };
+          entry.tables.add(other.tableName); matches.set(key, entry);
+        }
+      }
+    }
+    if (matches.size) {
+      const rows = [...matches.values()].map(x => `<li><b>${esc(x.name)}</b> · cũng được gọi ở ${[...x.tables].map(esc).join(', ')}</li>`).join('');
+      await modal({ title: 'Món trùng giữa các bàn', body: `<p>Các món sau đang có ở bàn khác. Bếp có thể làm cùng một lượt:</p><ul>${rows}</ul>`, foot: '<button class="btn btn-primary" data-close>OK</button>' }).result;
+    }
     const data = { tableName: res.tableName, round: res.round, items: res.items, by, at: res.at };
     deliver('kitchen', kitchenText(data), { title: `Phiếu bếp – ${res.tableName}`, print: () => kitchenPrintHTML(data), autoPrint: store.settings.print.autoKitchen, imageTitle: 'Phiếu bếp' });
   } catch (e) { console.error(e); toast(e.message || 'Gửi thất bại', 'err'); }

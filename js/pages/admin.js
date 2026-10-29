@@ -5,9 +5,8 @@ import { icon, toast, modal, confirmBox, promptBox, setTitle } from '../ui.js';
 import { esc, money, num, parseMoney, download, clone, norm } from '../utils.js';
 import { BANKS, vietQR } from '../bill.js';
 import { sendAuto } from '../zalo.js';
-import { APP_VERSION } from '../config.js';
 
-let el, tab = 'menu', menuPage = 0, menuQuery = '';
+let el, tab = 'menu', menuPage = 0, menuQuery = '', settingsSubtab = 'shop';
 const TABS = [['menu', 'Thực đơn', 'utensils'], ['tables', 'Bàn & khu vực', 'grid'], ['settings', 'Cài đặt', 'settings']];
 const nextOrder = list => Math.max(0, ...list.map(x => x.order || 0)) + 1;
 const categoryHue = index => `hsl(${(210 + index * 7) % 360} 42% 42%)`;
@@ -109,8 +108,11 @@ function settingsHTML() {
   const s = sdraft;
   s.address ||= '61k/Xã Hòa Phú,H.Long Hồ,Vĩnh Long';
   const z = s.zalo, b = s.bank;
-  return `<div class="settings-grid settings-columns">
-    <div class="card card-pad stack"><h3>${icon('store')} Thông tin quán</h3>
+  return `<div class="chips settings-subtabs">
+      ${[['shop', 'Thông tin quán'], ['discounts', 'Giảm giá và phụ thu'], ['zalo', 'Gửi Zalo'], ['other', 'Khác']].map(([key, label]) => `<button type="button" class="chip ${settingsSubtab === key ? 'active' : ''}" data-settings-tab="${key}">${label}</button>`).join('')}
+    </div>
+    <div class="settings-grid settings-columns">
+    <div class="card card-pad stack" data-settings-panel="shop" ${settingsSubtab === 'shop' ? '' : 'hidden'}><h3>${icon('store')} Thông tin quán</h3>
       <label class="field"><span>Tên quán</span><input class="input" data-k="shopName" value="${esc(s.shopName)}"></label>
       <label class="field"><span>Khẩu hiệu</span><input class="input" data-k="slogan" value="${esc(s.slogan || '')}"></label>
       <label class="field"><span>Địa chỉ</span><input class="input" data-k="address" value="${esc(s.address)}" placeholder="Số nhà, đường, quận…"></label>
@@ -118,14 +120,14 @@ function settingsHTML() {
       <label class="field"><span>Chủ quán</span><input class="input" data-k="ownerName" value="${esc(s.ownerName || (s.phone || '').split(/\s+-\s+/)[1] || '')}"></label>
     </div>
 
-    <div class="card card-pad stack"><h3>${icon('qr')} Chuyển khoản (VietQR)</h3>
+    <div class="card card-pad stack" data-settings-panel="shop" ${settingsSubtab === 'shop' ? '' : 'hidden'}><h3>${icon('qr')} Chuyển khoản (VietQR)</h3>
       <label class="field"><span>Ngân hàng</span><select class="input" data-k="bank.bin"><option value="">— Chọn ngân hàng —</option>${BANKS.map(([bin, n]) => `<option value="${bin}" ${bin === b.bin ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
       <label class="field"><span>Số tài khoản</span><input class="input" data-k="bank.accountNo" value="${esc(b.accountNo)}" inputmode="numeric"></label>
       <label class="field"><span>Tên chủ tài khoản (KHÔNG DẤU)</span><input class="input" data-k="bank.accountName" value="${esc(b.accountName)}" placeholder="NGUYEN VAN A" style="text-transform:uppercase"></label>
       <button class="btn btn-soft" data-a="qrTest">${icon('qr')} Xem thử mã QR 10.000đ</button>
     </div>
 
-    <div class="card card-pad stack"><h3>${icon('tag')} Giảm giá & Phụ thu</h3>
+    <div class="card card-pad stack" data-settings-panel="discounts" ${settingsSubtab === 'discounts' ? '' : 'hidden'}><h3>${icon('tag')} Giảm giá & Phụ thu</h3>
       <label class="field"><span>Mức giảm giá nhanh (%) – cách nhau dấu phẩy</span><input class="input" data-k="discountPresets" data-type="numlist" value="${s.discountPresets.join(', ')}"></label>
       <div class="label">Các loại phụ thu</div>
       <div class="stack-sm" id="surList">${s.surchargePresets.map((x, i) => `<div class="preset-line">
@@ -134,33 +136,32 @@ function settingsHTML() {
         <select class="input" data-sp="${i}" data-f="type"><option value="percent" ${x.type === 'percent' ? 'selected' : ''}>%</option><option value="amount" ${x.type === 'amount' ? 'selected' : ''}>VNĐ</option></select>
         <button class="icon-btn sm danger" data-a="spDel" data-i="${i}">${icon('trash')}</button></div>`).join('')}</div>
       <button class="btn btn-sm" data-a="spAdd">${icon('plus')} Thêm loại phụ thu</button>
-      <label class="field"><span>Ghi chú nhanh khi gọi món – cách nhau dấu phẩy</span><input class="input" data-k="noteChips" data-type="list" value="${esc(s.noteChips.join(', '))}"></label>
-      <label class="field"><span>Lý do hủy món – cách nhau dấu phẩy</span><input class="input" data-k="voidReasons" data-type="list" value="${esc(s.voidReasons.join(', '))}"></label>
     </div>
 
-    <div class="card card-pad stack"><h3>${icon('zalo')} Gửi nhóm Zalo</h3>
-      <div class="row-between"><span><b>Gửi phiếu bếp</b><div class="xs muted">Khi Order bấm "Gửi bếp"</div></span><label class="switch"><input type="checkbox" data-k="zalo.sendKitchen" ${z.sendKitchen ? 'checked' : ''}><span></span></label></div>
-      <div class="row-between"><span><b>Gửi hóa đơn</b><div class="xs muted">Khi thu ngân hoàn tất thanh toán</div></span><label class="switch"><input type="checkbox" data-k="zalo.sendBill" ${z.sendBill ? 'checked' : ''}><span></span></label></div>
+    <div class="card card-pad stack" data-settings-panel="zalo" ${settingsSubtab === 'zalo' ? '' : 'hidden'}><h3>${icon('zalo')} Gửi nhóm Zalo</h3>
+      <div class="row-between"><span><b>Gửi phiếu bếp</b></span><label class="switch"><input type="checkbox" data-k="zalo.sendKitchen" ${z.sendKitchen ? 'checked' : ''}><span></span></label></div>
+      <div class="row-between"><span><b>Gửi hóa đơn</b></span><label class="switch"><input type="checkbox" data-k="zalo.sendBill" ${z.sendBill ? 'checked' : ''}><span></span></label></div>
       <div class="divider"></div>
-      <div class="row-between"><span><b>Gửi TỰ ĐỘNG qua Zalo Bot</b><div class="xs muted">Tắt = hiện nút chia sẻ 1 chạm</div></span><label class="switch"><input type="checkbox" data-k="zalo.auto" ${z.auto ? 'checked' : ''}><span></span></label></div>
+      <div class="row-between"><span><b>Gửi TỰ ĐỘNG qua Zalo Bot</b></span><label class="switch"><input type="checkbox" data-k="zalo.auto" ${z.auto ? 'checked' : ''}><span></span></label></div>
       <div class="stack ${z.auto ? '' : 'hidden'}" id="zaloAuto">
         <label class="field"><span>Địa chỉ Worker (Cloudflare)</span><input class="input" data-k="zalo.workerUrl" value="${esc(z.workerUrl)}" placeholder="https://quanla-zalo.ten-ban.workers.dev"></label>
         <label class="field"><span>App Key (APP_KEY trong Worker)</span><input class="input" data-k="zalo.appKey" value="${esc(z.appKey)}" type="password" autocomplete="off"></label>
         <label class="field"><span>ID nhóm Bếp</span><input class="input" data-k="zalo.kitchenChatId" value="${esc(z.kitchenChatId)}" placeholder="Nhắn /id trong nhóm để lấy"></label>
         <label class="field"><span>ID nhóm Hóa đơn (bỏ trống = dùng nhóm Bếp)</span><input class="input" data-k="zalo.billChatId" value="${esc(z.billChatId)}"></label>
         <button class="btn btn-soft" data-a="zaloTest">${icon('send')} Gửi tin thử</button>
-        <div class="notice warn">${icon('info')}<div class="xs">Zalo Bot trong nhóm đang ở giai đoạn Beta. Nếu gửi lỗi, app tự chuyển sang chia sẻ thủ công. Xem hướng dẫn trong README.</div></div>
       </div>
     </div>
 
-    <div class="card card-pad stack"><h3>${icon('clock')} Khác</h3>
+    <div class="card card-pad stack" data-settings-panel="other" ${settingsSubtab === 'other' ? '' : 'hidden'}><h3>${icon('clock')} Khác</h3>
+      <label class="field"><span>Ghi chú nhanh khi gọi món – cách nhau dấu phẩy</span><input class="input" data-k="noteChips" data-type="list" value="${esc(s.noteChips.join(', '))}"></label>
+      <label class="field"><span>Lý do hủy món – cách nhau dấu phẩy</span><input class="input" data-k="voidReasons" data-type="list" value="${esc(s.voidReasons.join(', '))}"></label>
+      <div class="row-between"><span><b>Yêu cầu mật khẩu/PIN</b></span><label class="switch"><input type="checkbox" data-k="requirePin" ${s.requirePin !== false ? 'checked' : ''} ${db.mode === 'firebase' ? 'disabled' : ''}><span></span></label></div>
       <label class="field"><span>Cảnh báo bàn ngồi lâu (phút)</span><input class="input" data-k="longSitMinutes" data-type="num" value="${s.longSitMinutes}" inputmode="numeric"></label>
       <label class="field"><span>Tự khóa máy Thu Ngân sau (phút, 0 = tắt)</span><input class="input" data-k="lockMinutes" data-type="num" value="${s.lockMinutes}" inputmode="numeric"></label>
       ${db.mode === 'local' ? `<div class="divider"></div><div class="label">Dữ liệu (chế độ demo)</div>
         <div class="btn-row wrap"><button class="btn btn-sm" data-a="export">${icon('download')} Sao lưu</button>
         <label class="btn btn-sm">${icon('upload')} Khôi phục<input type="file" accept=".json" data-a="import" hidden></label>
         <button class="btn btn-sm btn-danger-soft" data-a="reset">${icon('trash')} Xóa dữ liệu</button></div>` : ''}
-      <div class="xs muted">Phiên bản ${APP_VERSION} · ${db.mode === 'local' ? 'Chế độ demo' : 'Firebase'}</div>
     </div>
   </div>
   <div class="settings-savebar"><button class="btn btn-primary" data-a="saveSettings">${icon('check')} Lưu cài đặt</button></div>`;
@@ -253,6 +254,8 @@ export default {
     sdraft = clone({ ...DEFAULT_SETTINGS, ...store.settings }); delete sdraft.pins;
     render();
     const onClick = e => {
+      const settingsButton = e.target.closest('[data-settings-tab]');
+      if (settingsButton) { settingsSubtab = settingsButton.dataset.settingsTab; render(); return; }
       const b = e.target.closest('[data-a]');
       if (!b || b.tagName === 'INPUT') return;
       onAction(b.dataset.a, b);

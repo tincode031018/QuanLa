@@ -6,7 +6,7 @@ import { esc, num, money, norm, dayKey, download, fmtDT } from '../utils.js';
 import { isTrackedItem, defaultUnit, formatStockQty, importStock, adjustStock } from '../actions.js';
 
 let el;
-let filter = 'all_drinks'; // 'all_drinks' | 'beer' | 'soft_drink' | 'low_stock' | 'all'
+let filter = 'all_drinks'; // 'all_drinks' | 'beer' | 'soft_drink' | 'low_stock'
 let q = '';
 
 function getCategoryName(catId) {
@@ -31,7 +31,6 @@ function getTrackedList() {
   const nq = norm(q);
   // Danh sách các mặt hàng theo dõi
   let list = store.menu.filter(m => {
-    if (filter === 'all') return true;
     const tracked = isTrackedItem(m);
     if (!tracked) return false;
     if (filter === 'beer') return isBeer(m.name);
@@ -99,7 +98,6 @@ function render() {
       <div class="im-data">
         <span class="im-label">Tổng tồn kho quy đổi</span>
         <b class="im-val">${num(metrics.totalUnits)} <small>lon/chai</small></b>
-        <span class="im-sub">≈ ${metrics.packText}</span>
       </div>
     </div>
     <div class="inv-metric ${metrics.lowCount ? 'metric-warn' : ''}">
@@ -107,7 +105,6 @@ function render() {
       <div class="im-data">
         <span class="im-label">Cảnh báo sắp hết (≤ 10)</span>
         <b class="im-val">${metrics.lowCount} <small>loại</small></b>
-        <span class="im-sub">${metrics.lowCount ? 'Cần nhập bổ sung sớm' : 'Kho ổn định'}</span>
       </div>
     </div>
     <div class="inv-metric ${metrics.outCount ? 'metric-danger' : ''}">
@@ -115,7 +112,6 @@ function render() {
       <div class="im-data">
         <span class="im-label">Hết hàng / Âm kho</span>
         <b class="im-val">${metrics.outCount} <small>loại</small></b>
-        <span class="im-sub">${metrics.outCount ? 'Cần kiểm tra hoặc nhập' : 'Không có'}</span>
       </div>
     </div>
   `;
@@ -123,7 +119,7 @@ function render() {
   // Render bảng Excel
   const tbody = el.querySelector('#invTableBody');
   if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="10" class="excel-empty">Không tìm thấy mặt hàng nào phù hợp với bộ lọc</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="excel-empty">Không tìm thấy mặt hàng nào phù hợp với bộ lọc</td></tr>`;
     return;
   }
 
@@ -132,8 +128,6 @@ function render() {
     const unit = m.unit || defaultUnit(m.name);
     const packSize = Number(m.packSize) || 24;
     const formatted = formatStockQty(stock, packSize, unit);
-    const exported = Number(m.totalExported || 0);
-    const imported = Number(m.totalImported || 0);
     const type = getItemType(m);
 
     let statusBadge = '<span class="excel-badge badge-ok">Còn hàng</span>';
@@ -153,21 +147,12 @@ function render() {
         <div class="excel-sub">${m.price ? money(m.price) : esc(m.priceLabel || 'Chưa định giá')}</div>
       </td>
       <td class="col-type"><span class="type-tag ${type === 'Bia' ? 'tag-beer' : 'tag-drink'}">${type}</span></td>
-      <td class="col-unit">${esc(unit)}</td>
-      <td class="col-pack">${packSize} ${unit.toLowerCase()}/thùng</td>
       <td class="col-stock">
         <div class="stock-main ${formatted.isOut ? 'text-danger' : formatted.isLow ? 'text-warn' : 'text-ok'}">
-          <b>${formatted.main}</b>
+          <b>${formatted.main}</b><span class="inv-stock-controls"><button type="button" class="inv-stock-add" data-act="importOne" data-id="${m.id}" aria-label="Nhập thêm ${esc(m.name)}" title="Nhập thêm số lượng">+</button><button type="button" class="inv-stock-remove" data-act="decrementOne" data-id="${m.id}" aria-label="Giảm một ${esc(unit)} ${esc(m.name)}" title="Giảm 1">−</button></span>
         </div>
-        <div class="stock-sub">${formatted.packText}</div>
       </td>
-      <td class="col-exported">${exported ? `<b>${num(exported)}</b> ${unit.toLowerCase()}` : '<span class="muted">-</span>'}</td>
-      <td class="col-imported">${imported ? `<b>${num(imported)}</b> ${unit.toLowerCase()}` : '<span class="muted">-</span>'}</td>
       <td class="col-status">${statusBadge}</td>
-      <td class="col-actions">
-        <button class="btn btn-sm btn-primary-soft" data-act="importOne" data-id="${m.id}" title="Nhập thêm hàng">${icon('plus')} Nhập</button>
-        <button class="btn btn-sm btn-ghost" data-act="adjustOne" data-id="${m.id}" title="Kiểm kê / Sửa tồn">${icon('edit')} Kiểm kê</button>
-      </td>
     </tr>`;
   }).join('');
 }
@@ -401,14 +386,10 @@ function exportExcel() {
   const list = getTrackedList();
   if (!list.length) return toast('Không có dữ liệu để xuất Excel', 'warn');
 
-  const headers = ['STT', 'Tên mặt hàng', 'Phân loại', 'Đơn vị tính', 'Quy cách', 'Tồn kho hiện tại', 'Quy đổi thùng', 'Đã xuất bán', 'Tổng nhập', 'Trạng thái'];
+  const headers = ['STT', 'Tên mặt hàng', 'Phân loại', 'Số lượng tồn', 'Trạng thái'];
   const rows = list.map((m, idx) => {
     const stock = Number(m.stock || 0);
     const unit = m.unit || defaultUnit(m.name);
-    const packSize = Number(m.packSize) || 24;
-    const formatted = formatStockQty(stock, packSize, unit);
-    const exported = Number(m.totalExported || 0);
-    const imported = Number(m.totalImported || 0);
     const type = getItemType(m);
     const status = stock <= 0 ? (stock < 0 ? 'Âm kho' : 'Hết hàng') : (stock <= 10 ? 'Sắp hết' : 'Còn hàng');
 
@@ -416,12 +397,7 @@ function exportExcel() {
       idx + 1,
       `"${(m.name || '').replace(/"/g, '""')}"`,
       `"${type}"`,
-      unit,
-      `${packSize} ${unit}/thùng`,
-      stock,
-      `"${formatted.packText}"`,
-      exported,
-      imported,
+      `"${stock} ${unit}"`,
       status,
     ].join(',');
   });
@@ -525,19 +501,16 @@ export default {
             <div class="excel-brand-badge">${icon('box')} TỒN KHO</div>
             <div>
               <h2>Quản Lý Tồn Kho Bia & Nước Ngọt</h2>
-              <p class="xs muted">Tự động trừ kho khi xuất bán · Tự động cộng khi nhập hàng · Cảnh báo sắp hết</p>
             </div>
           </div>
           <div class="inv-header-actions">
-            <button class="btn btn-primary" data-act="import">${icon('plus')} Nhập hàng</button>
-            <button class="btn btn-soft" data-act="addItem">${icon('plus')} Thêm bia/nước</button>
             <button class="btn btn-ghost" data-act="export">${icon('download')} Xuất Excel</button>
             <button class="btn btn-ghost" data-act="logs">${icon('receipt')} Nhật ký kho</button>
           </div>
         </div>
 
         <!-- Metrics Ribbon -->
-        <div class="inv-metrics" id="invMetrics"></div>
+        <div class="inv-metrics" id="invMetrics" hidden></div>
 
         <!-- Excel Control Toolbar (Search & Sheet Tabs) -->
         <div class="excel-toolbar">
@@ -546,7 +519,6 @@ export default {
             <button class="excel-tab ${filter === 'beer' ? 'active' : ''}" data-f="beer">Bia</button>
             <button class="excel-tab ${filter === 'soft_drink' ? 'active' : ''}" data-f="soft_drink">Nước ngọt & Suối</button>
             <button class="excel-tab ${filter === 'low_stock' ? 'active' : ''}" data-f="low_stock">⚠️ Cảnh báo hết (≤10)</button>
-            <button class="excel-tab ${filter === 'all' ? 'active' : ''}" data-f="all">Toàn bộ thực đơn</button>
           </div>
           <div class="excel-search">
             ${icon('search')}
@@ -561,7 +533,6 @@ export default {
             <div class="sheet-info">
               <span class="sheet-icon">📊</span>
               <b>Bảng_Theo_Dõi_Tồn_Kho.xlsx</b>
-              <span class="xs muted">· Chế độ xem bảng tính trực quan</span>
             </div>
           </div>
           <div class="excel-scroll">
@@ -571,25 +542,15 @@ export default {
                   <th class="col-stt">A</th>
                   <th class="col-name">B</th>
                   <th class="col-type">C</th>
-                  <th class="col-unit">D</th>
-                  <th class="col-pack">E</th>
-                  <th class="col-stock">F</th>
-                  <th class="col-exported">G</th>
-                  <th class="col-imported">H</th>
-                  <th class="col-status">I</th>
-                  <th class="col-actions">J</th>
+                  <th class="col-stock">D</th>
+                  <th class="col-status">E</th>
                 </tr>
                 <tr class="excel-col-headers">
                   <th class="col-stt">STT</th>
                   <th class="col-name">Tên mặt hàng</th>
                   <th class="col-type">Phân loại</th>
-                  <th class="col-unit">ĐVT</th>
-                  <th class="col-pack">Quy cách</th>
-                  <th class="col-stock">Tồn kho hiện tại</th>
-                  <th class="col-exported">Đã bán (Xuất)</th>
-                  <th class="col-imported">Tổng nhập</th>
+                  <th class="col-stock">Số lượng tồn</th>
                   <th class="col-status">Trạng thái</th>
-                  <th class="col-actions">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="invTableBody"></tbody>
@@ -615,9 +576,16 @@ export default {
         return;
       }
 
-      if (act === 'import') showImportModal();
-      else if (act === 'addItem') showAddTrackedItemModal();
-      else if (act === 'export') exportExcel();
+      if (act === 'decrementOne') {
+        const item = store.menu.find(m => m.id === btn.dataset.id);
+        const current = Number(item?.stock || 0);
+        if (!item || current <= 0) return toast('Số lượng tồn đã là 0', 'info');
+        try {
+          await adjustStock(item.id, current - 1, 'Giảm nhanh 1 đơn vị', store.user?.name);
+          toast(`Đã giảm tồn ${item.name} còn ${current - 1}`, 'ok');
+          render();
+        } catch (e) { toast(e.message || 'Không giảm được số lượng tồn', 'err'); }
+      } else if (act === 'export') exportExcel();
       else if (act === 'logs') showLogsModal();
       else if (act === 'importOne') showImportModal(btn.dataset.id);
       else if (act === 'adjustOne') showAdjustModal(btn.dataset.id);

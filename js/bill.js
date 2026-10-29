@@ -151,7 +151,6 @@ function shopHeader() {
 export function billPrintHTML(bill, { draft = false } = {}) {
   const s = store.settings;
   const c = calc(bill);
-  const qr = (draft || bill.pay?.method !== 'cash') && s.print.showQR ? vietQR(bill.pay?.method === 'mixed' ? bill.pay.transfer : c.total, qrInfo(bill)) : '';
   return `${shopHeader()}
   <div class="r-c r-title">${draft ? 'PHIẾU TÍNH TIỀN' : 'HÓA ĐƠN THANH TOÁN'}</div>
   ${bill.code ? `<div class="r-c">Số: ${esc(bill.code)}</div>` : ''}
@@ -160,23 +159,11 @@ export function billPrintHTML(bill, { draft = false } = {}) {
   <div class="r-row"><span>Giờ vào: ${fmtTime(bill.openedAt)}</span><span>${bill.closedAt ? 'Giờ ra: ' + fmtTime(bill.closedAt) : 'In: ' + fmtTime(Date.now())}</span></div>
   ${bill.closedBy ? `<div>Thu ngân: ${esc(bill.closedBy)}</div>` : ''}
   <div class="r-hr"></div>
-  <table class="r-tb"><tbody>
-  ${groupItems(c.items).map(it => `<tr><td colspan="3"><b>${esc(it.name)}</b></td></tr>
-    <tr><td class="q">${it.qty}</td><td>x ${num(it.price)}</td><td class="m">${num(it.qty * it.price)}</td></tr>
-    ${it.note ? `<tr><td></td><td colspan="2" class="r-note">(${esc(it.note)})</td></tr>` : ''}`).join('')}
+  <table class="r-tb bill-items"><thead><tr><th>STT</th><th>Tên món ăn</th><th>Số lượng</th><th>Thành tiền</th></tr></thead><tbody>
+  ${groupItems(c.items).map((it, index) => `<tr><td class="q">${index + 1}</td><td><b>${esc(it.name)}</b></td><td class="q">${it.qty}</td><td class="m">${num(it.qty * it.price)}</td></tr>`).join('')}
   </tbody></table>
-  <div class="r-hr"></div>
-  <div class="r-row"><span>Tạm tính (${c.count} món)</span><span>${num(c.subtotal)}</span></div>
-  ${c.discountAmt ? `<div class="r-row"><span>${esc(adjLabel(bill.discount, 'Giảm giá'))}</span><span>-${num(c.discountAmt)}</span></div>` : ''}
-  ${c.surchargeAmt ? `<div class="r-row"><span>${esc(adjLabel(bill.surcharge, 'Phụ thu'))}</span><span>+${num(c.surchargeAmt)}</span></div>` : ''}
-  <div class="r-hr"></div>
   <div class="r-row r-total"><span>TỔNG CỘNG</span><span>${money(c.total)}</span></div>
-  ${bill.pay ? `<div class="r-row"><span>Thanh toán</span><span>${payLabel(bill.pay.method)}</span></div>
-    ${bill.pay.method === 'cash' && bill.pay.received ? `<div class="r-row"><span>Khách đưa</span><span>${num(bill.pay.received)}</span></div><div class="r-row"><span>Tiền thối</span><span>${num(Math.max(0, bill.pay.received - c.total))}</span></div>` : ''}
-    ${bill.pay.method === 'mixed' ? `<div class="r-row"><span>Tiền mặt</span><span>${num(bill.pay.cash)}</span></div><div class="r-row"><span>Chuyển khoản</span><span>${num(bill.pay.transfer)}</span></div>` : ''}` : ''}
-  ${qr ? `<div class="r-c"><img class="r-qr" src="${qr}" alt=""><div>Quét mã để chuyển khoản</div></div>` : ''}
-  <div class="r-hr"></div>
-  <div class="r-c">${esc(s.print.footer || '')}</div>`;
+  `;
 }
 export function kitchenPrintHTML({ tableName, round, items, by, at }) {
   return `<div class="r-c r-title">PHIẾU BẾP${round > 1 ? ` – LẦN ${round}` : ''}</div>

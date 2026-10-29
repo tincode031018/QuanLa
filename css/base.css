@@ -110,6 +110,8 @@ strong, b { font-weight: 500; letter-spacing: -.08px; }
 .r-total { font-size: 16px; font-weight: 800; }
 .r-tb { width: 100%; border-collapse: collapse; }
 .r-tb td { padding: 2px 0; vertical-align: top; }
+.r-tb.bill-items th, .r-tb.bill-items td { border: .5px solid #777; padding: 3px 2px; }
+.r-tb.bill-items th { text-align: center; font-weight: 700; }
 .r-tb .q { width: 26px; text-align: center; }
 .r-tb .m { text-align: right; white-space: nowrap; padding-left: 6px; }
 .r-note { font-size: 11.5px; font-style: italic; padding-left: 8px; }

@@ -1,10 +1,10 @@
 // ===== O01 / C01 – Sơ đồ bàn (+ bảng điều khiển thu ngân) =====
 import { store, billOfTable } from '../store.js';
 import { icon, setTitle } from '../ui.js';
-import { esc, short, money, minutesSince, dur, fmtTime } from '../utils.js';
+import { esc, short, minutesSince, dur } from '../utils.js';
 import { calc } from '../bill.js';
 
-let el, area = localStorage.getItem('ql_area') || 'all', tick;
+let el, area = localStorage.getItem('ql_area') || 'all', tick, selectedTableId = null, statusFilter = 'all';
 
 function tableCard(t) {
   const b = billOfTable(t);
@@ -13,7 +13,7 @@ function tableCard(t) {
   const min = b ? minutesSince(b.openedAt) : 0;
   const long = b && min >= (store.settings.longSitMinutes || 120);
   const isNew = b && store.unseen.has(b.id) && store.user.role === 'cashier';
-  return `<button class="tcard st-${st} ${long ? 'long' : ''}" data-id="${t.id}" aria-label="${esc(t.name)}: ${st === 'empty' ? 'trống' : st === 'waiting' ? 'chờ thanh toán' : 'đang phục vụ'}">
+  return `<button class="tcard st-${st} ${long ? 'long' : ''} ${selectedTableId === t.id ? 'selected' : ''}" data-id="${t.id}" aria-label="${esc(t.name)}: ${st === 'empty' ? 'trống' : st === 'waiting' ? 'chờ thanh toán' : 'đang phục vụ'}">
     ${isNew ? '<span class="new-dot" aria-label="Có cập nhật mới"></span>' : ''}
     <span class="tc-top"><span class="tc-name">${esc(t.name)}</span></span>
     <span class="tc-mid">${b ? (c.count ? short(c.total) : 'Mới mở') : 'Trống'}</span>
@@ -45,18 +45,23 @@ function queueHTML() {
 
 function render() {
   const isCashier = store.user.role === 'cashier';
-  const list = store.tables.filter(t => area === 'all' || t.areaId === area);
+  const list = store.tables.filter(t => {
+    if (area !== 'all' && t.areaId !== area) return false;
+    const b = billOfTable(t);
+    const status = b ? (b.status === 'waiting' ? 'waiting' : 'serving') : 'empty';
+    return statusFilter === 'all' || status === statusFilter;
+  });
   const counts = { empty: 0, serving: 0, waiting: 0 };
   store.tables.forEach(t => { const b = billOfTable(t); counts[b ? (b.status === 'waiting' ? 'waiting' : 'serving') : 'empty']++; });
   const showArea = store.areas.length > 1;
   el.innerHTML = `
-    <div class="dash ${isCashier ? 'with-panel' : ''}">
+    <div class="dash">
       <section>
         <div class="page-head">
           <div class="stats">
-            <span class="stat"><i class="dot d-empty"></i>Trống ${counts.empty}</span>
-            <span class="stat"><i class="dot d-serving"></i>Có khách ${counts.serving}</span>
-            <span class="stat"><i class="dot d-waiting"></i>Chờ TT ${counts.waiting}</span>
+            <button type="button" class="stat ${statusFilter === 'empty' ? 'active' : ''}" data-status="empty" aria-pressed="${statusFilter === 'empty'}"><i class="dot d-empty"></i>Trống ${counts.empty}</button>
+            <button type="button" class="stat ${statusFilter === 'serving' ? 'active' : ''}" data-status="serving" aria-pressed="${statusFilter === 'serving'}"><i class="dot d-serving"></i>Có khách ${counts.serving}</button>
+            <button type="button" class="stat ${statusFilter === 'waiting' ? 'active' : ''}" data-status="waiting" aria-pressed="${statusFilter === 'waiting'}"><i class="dot d-waiting"></i>Đủ món ${counts.waiting}</button>
           </div>
         </div>
         ${showArea ? `<div class="chips mb">
@@ -67,7 +72,6 @@ function render() {
           list.length ? `<div class="tgrid">${list.map(tableCard).join('')}</div>` :
           `<div class="empty">${icon('grid')}Chưa có bàn${isCashier ? ' – thêm bàn trong <a class="text-brand bold" href="#/admin/tables">Quản lý</a>' : ''}</div>`}
       </section>
-      ${isCashier ? `<aside class="panel">${queueHTML()}</aside>` : ''}
     </div>`;
 }
 
@@ -78,10 +82,13 @@ export default {
     if (area !== 'all' && !store.areas.some(a => a.id === area)) area = 'all';
     render();
     const onClick = e => {
+      const s = e.target.closest('[data-status]');
+      if (s) { statusFilter = statusFilter === s.dataset.status ? 'all' : s.dataset.status; selectedTableId = null; return render(); }
       const a = e.target.closest('[data-area]');
       if (a) { area = a.dataset.area; localStorage.setItem('ql_area', area); return render(); }
       const t = e.target.closest('.tcard');
       if (!t) return;
+      if (selectedTableId !== t.dataset.id) { selectedTableId = t.dataset.id; render(); return; }
       const table = store.tables.find(x => x.id === t.dataset.id);
       const b = billOfTable(table);
       if (store.user.role === 'cashier' && b && b.items?.length) location.hash = '#/bill/' + b.id;
@@ -92,6 +99,7 @@ export default {
     return () => { el.removeEventListener('click', onClick); clearInterval(tick); };
   },
   update(keys) {
+    if (selectedTableId && !store.tables.some(t => t.id === selectedTableId)) selectedTableId = null;
     if (['tables', 'bills', 'areas', 'today', 'unseen', 'settings'].some(k => keys.has(k))) render();
   },
 };

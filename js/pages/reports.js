@@ -59,8 +59,6 @@ function render() {
   const body = el.querySelector('#rbody');
   if (!r) { body.innerHTML = '<div class="empty">Đang tải…</div>'; return; }
   const maxTop = Math.max(1, ...r.top.map(t => t.qty));
-  const staff = Object.entries(r.byStaff).sort((a, b) => b[1] - a[1]);
-  const cashiers = Object.entries(r.byCashier).sort((a, b) => b[1] - a[1]);
   body.innerHTML = `
     <div class="kpis">
       <div class="card kpi hl"><div class="k-label">Doanh thu</div><div class="k-val">${money(r.revenue)}</div><div class="k-sub">${label()}</div></div>
@@ -76,12 +74,6 @@ function render() {
       <div class="card card-pad"><h3>Doanh thu theo ${from === to ? 'giờ' : 'ngày'}</h3>${chart(r)}</div>
       <div class="card card-pad"><h3>Món bán chạy</h3>
         ${r.top.length ? r.top.slice(0, 10).map((t, i) => { const stars = Math.max(1, Math.ceil(t.qty / maxTop * 5)); return `<div class="hbar"><span class="top-item-name"><b>${i + 1}.</b> ${esc(t.name)}</span><span class="small"><b>${t.qty}</b> · ${short(t.revenue)}</span><span class="top-item-stars" role="img" aria-label="${stars} trên 5 sao">${'★'.repeat(stars)}<span>${'☆'.repeat(5 - stars)}</span></span></div>`; }).join('') : '<div class="empty small">Chưa có dữ liệu</div>'}
-      </div>
-      <div class="card card-pad"><h3>Nhân viên Order (số món)</h3>
-        ${staff.length ? staff.map(([n, v]) => `<div class="row-between" style="padding:8px 0;border-bottom:1px dashed var(--line)"><span>${esc(n)}</span><b>${v} món</b></div>`).join('') : '<div class="empty small">Chưa có dữ liệu</div>'}
-      </div>
-      <div class="card card-pad"><h3>Thu ngân (doanh thu)</h3>
-        ${cashiers.length ? cashiers.map(([n, v]) => `<div class="row-between" style="padding:8px 0;border-bottom:1px dashed var(--line)"><span>${esc(n)}</span><b>${money(v)}</b></div>`).join('') : '<div class="empty small">Chưa có dữ liệu</div>'}
       </div>
     </div>`;
 }

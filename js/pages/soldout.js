@@ -20,6 +20,7 @@ function render() {
 export default {
   async mount(root) {
     el = root; setTitle('Báo hết món'); q = '';
+    if (store.user?.role !== 'cashier') { el.innerHTML = '<div class="card empty">Chỉ Thu Ngân được báo hết món.</div>'; return; }
     el.innerHTML = `<div class="page-head"><h1>Báo hết món</h1><span class="pill st-waiting" id="scount"></span></div>
       <p class="small muted mb">Tắt công tắc khi món hết – tất cả máy Order sẽ thấy ngay và không gọi được món đó.</p>
       <div class="searchbox mb">${icon('search')}<input class="input" id="sq" placeholder="Tìm món…"></div>

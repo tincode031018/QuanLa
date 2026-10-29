@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS = {
   print: { autoBill: false, autoKitchen: false, footer: 'Cảm ơn quý khách – Hẹn gặp lại!', showQR: true },
   longSitMinutes: 120,
   lockMinutes: 0,
+  requirePin: true,
 };
 
 export const store = {

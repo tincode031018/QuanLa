@@ -1,6 +1,6 @@
 // ===== S01 – Đăng nhập: chọn vai trò -> mã PIN -> chọn tên =====
 import { db } from '../db.js';
-import { store, seedIfNeeded } from '../store.js';
+import { store, seedIfNeeded, startSync } from '../store.js';
 import { verifyPin, logout, ROLE_NAME } from '../auth.js';
 import { icon, logo, toast } from '../ui.js';
 import { esc } from '../utils.js';
@@ -16,6 +16,7 @@ function render() {
         <button class="role-card" data-role="order"><span class="ri">${icon('list')}</span><b>Order</b><span>Nhân viên phục vụ<br>gọi món tại bàn</span></button>
         <button class="role-card cashier" data-role="cashier"><span class="ri">${icon('cash')}</span><b>Thu Ngân</b><span>Thanh toán, quản lý<br>& báo cáo</span></button>
       </div>
+      ${s.requirePin === false ? '<div class="notice warn mt">Đang tắt yêu cầu PIN: chọn vai trò sẽ đăng nhập ngay.</div>' : ''}
       ${db.mode === 'local' ? `<div class="demo-hint">Chế độ demo · PIN Order <span class="kbd">111111</span> · Thu Ngân <span class="kbd">999999</span></div>` : ''}`;
   } else if (step === 'pin') {
     inner = `
@@ -62,7 +63,12 @@ export default {
     const onClick = e => {
       const t = e.target.closest('[data-role],[data-k],[data-act]');
       if (!t) return;
-      if (t.dataset.role) { role = t.dataset.role; step = 'pin'; pin = ''; render(); }
+      if (t.dataset.role) {
+        role = t.dataset.role;
+        if (store.settings.requirePin === false && db.mode === 'local') { store.user = { role, name: ROLE_NAME[role], at: Date.now() }; localStorage.setItem('ql_session', JSON.stringify(store.user)); startSync(); location.hash = '#/tables'; return; }
+        if (store.settings.requirePin === false && db.mode === 'firebase') { toast('Firebase vẫn yêu cầu PIN để xác thực tài khoản', 'warn'); }
+        step = 'pin'; pin = ''; render();
+      }
       else if (t.dataset.k) key(t.dataset.k);
       else if (t.dataset.act === 'cancel') { logout(); step = 'role'; render(); }
     };

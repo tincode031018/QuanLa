@@ -7,24 +7,25 @@ import { esc, initials } from './utils.js';
 import { unlockAudio, watchBills } from './notify.js';
 import { APP_VERSION } from './config.js';
 
-import login from './pages/login.js?v=1.0.37';
-import tables from './pages/tables.js?v=1.0.37';
-import order from './pages/order.js?v=1.0.37';
-import orders from './pages/orders.js?v=1.0.37';
-import bill from './pages/cashier.js?v=1.0.37';
-import history from './pages/history.js?v=1.0.37';
-import reports from './pages/reports.js?v=1.0.37';
-import admin from './pages/admin.js?v=1.0.37';
-import soldout from './pages/soldout.js?v=1.0.37';
-import printer from './pages/printer.js?v=1.0.37';
-import inventory from './pages/inventory.js?v=1.0.37';
+import login from './pages/login.js?v=1.0.41';
+import tables from './pages/tables.js?v=1.0.43';
+import order from './pages/order.js?v=1.0.41';
+import orders from './pages/orders.js?v=1.0.41';
+import bill from './pages/cashier.js?v=1.0.41';
+import history from './pages/history.js?v=1.0.41';
+import reports from './pages/reports.js?v=1.0.42';
+import admin from './pages/admin.js?v=1.0.43';
+import soldout from './pages/soldout.js?v=1.0.41';
+import printer from './pages/printer.js?v=1.0.41';
+import inventory from './pages/inventory.js?v=1.0.48';
 
 const ROUTES = { login, tables, order, orders, bill, history, reports, admin, soldout, printer, inventory };
 const NAV = {
-  order: [['tables', 'Sơ đồ bàn', 'grid'], ['orders', 'Đơn', 'list'], ['soldout', 'Hết món', 'ban']],
+  order: [['tables', 'Sơ đồ bàn', 'grid'], ['orders', 'Đơn', 'list']],
   cashier: [
     ['tables', 'Sơ đồ bàn', 'grid'],
     ['orders', 'Thu ngân', 'cash'],
+    ['soldout', 'Hết món', 'ban'],
     ['inventory', 'Tồn kho', 'box'],
     ['history', 'Lịch sử', 'receipt'],
     ['reports', 'Báo cáo', 'chart'],
@@ -32,7 +33,7 @@ const NAV = {
     ['admin', 'Quản lý', 'settings'],
   ],
 };
-const ALLOWED = { order: ['tables', 'order', 'orders', 'soldout'], cashier: Object.keys(ROUTES) };
+const ALLOWED = { order: ['tables', 'order', 'orders'], cashier: Object.keys(ROUTES) };
 
 const app = document.getElementById('app');
 let current = null;
