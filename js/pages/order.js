@@ -3,7 +3,7 @@ import { store, tableById, billOfTable, menuById } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, pickBox, setTitle } from '../ui.js';
 import { esc, money, norm, fmtTime, minutesSince, dur } from '../utils.js';
 import { calc, rounds, kitchenText, kitchenPrintHTML, sumItems, itemCount } from '../bill.js?v=1.0.38';
-import { sendItems, requestPayment, reopenBill, moveTable, setAvailable } from '../actions.js';
+import { sendItems, requestPayment, reopenBill, moveTable, mergeBills, voidItem, setAvailable } from '../actions.js';
 import { deliver } from '../zalo.js';
 
 let el, tableId, cart = [], cat = 'all', q = '', soldMode = false, sending = false, cartOpen = false;
@@ -134,7 +134,7 @@ function renderCart() {
   const pane = el.querySelector('#cartPane');
   pane.innerHTML = `
     <div class="cp-head"><h2>Đơn ${esc(t?.name || '')}</h2>
-      ${b ? `<button class="btn btn-sm btn-ghost" data-act="move">${icon('move')} Chuyển bàn</button>` : ''}
+      ${b ? `<button class="btn btn-sm btn-ghost" data-act="move">${icon('move')} Chuyển bàn</button><button class="btn btn-sm btn-ghost" data-act="merge">${icon('merge')} Ghép bàn</button>` : ''}
       <button class="icon-btn sm only-mobile" data-act="closecart" aria-label="Đóng">${icon('x')}</button></div>
     <div class="cp-body">
       <div class="cp-sec"><span>Món mới · chưa gửi</span>${cart.length ? `<button class="text-danger xs bold" data-act="clear">Xóa hết</button>` : ''}</div>
@@ -145,9 +145,9 @@ function renderCart() {
           <div class="qty"><button data-act="cdec" data-i="${i}" aria-label="Bớt">${icon(c.qty > 1 ? 'minus' : 'trash')}</button><span>${c.qty}</span><button data-act="cinc" data-i="${i}" aria-label="Thêm">${icon('plus')}</button></div>
           <div class="cl-sum">${money(c.qty * c.price)}</div>
         </div>`).join('') : `<div class="muted small" style="padding:10px 2px">Chạm vào món bên ${matchMedia('(min-width:900px)').matches ? 'trái' : 'dưới'} để thêm.</div>`}
-      ${b && b.items?.length ? `<div class="cp-sec"><span>Đã gửi bếp</span><span>${sent.count} món</span></div>
+    ${b && b.items?.length ? `<div class="cp-sec"><span>Đã gửi bếp</span><span>${sent.count} món</span></div>
         ${rounds(b).map(r => `<div class="round"><div class="round-h"><span>Lần ${r.round} · ${fmtTime(r.at)}</span><span>${esc(r.by || '')}</span></div>
-          ${r.items.map(it => `<div class="sline ${it.void ? 'void' : ''}"><span class="sq">${it.qty}</span><span class="sn">${esc(it.name)}${it.note ? `<small>${esc(it.note)}</small>` : ''}${it.void ? `<small>Đã hủy: ${esc(it.voidReason || '')}</small>` : ''}</span><span class="sm">${money(it.qty * it.price)}</span></div>`).join('')}
+          ${r.items.map(it => `<div class="sline ${it.void ? 'void' : ''}"><span class="sq">${it.qty}</span><span class="sn">${esc(it.name)}${it.note ? `<small>${esc(it.note)}</small>` : ''}${it.void ? `<small>Đã hủy: ${esc(it.voidReason || '')}</small>` : ''}</span><span class="sm">${money(it.qty * it.price)}</span>${store.user.role === 'cashier' && !it.void ? `<button class="icon-btn sm danger" data-act="voidsent" data-id="${it.id}" aria-label="Hủy món">${icon('x')}</button>` : ''}</div>`).join('')}
         </div>`).join('')}` : ''}
     </div>
     <div class="cp-foot">
@@ -163,12 +163,13 @@ function renderCart() {
 
   // Thanh dưới (điện thoại)
   const bar = el.querySelector('#cartBar');
-  if (cart.length || b?.items?.length) {
+  if (b) {
+    bar.innerHTML = `<button class="cb-info" data-act="openCartSheet"><span class="cb-count" style="background:var(--accent)">${totalCount}</span><span class="cb-text"><b>${money(totalAmount)}</b><small>Bill tạm tính · chạm để xem món</small></span></button>
+      <button class="btn btn-ghost cart-action-icon" data-act="move" aria-label="Chuyển bàn" title="Chuyển bàn">${icon('move')}</button><button class="btn btn-ghost cart-action-icon" data-act="merge" aria-label="Ghép bàn" title="Ghép bàn">${icon('merge')}</button>
+      ${cart.length ? `<button class="btn btn-primary" data-act="send" ${sending ? 'disabled' : ''}>${icon('send')} Gửi bếp</button>` : b.status === 'waiting' ? `<span class="pill st-waiting" style="align-self:center">Chờ TT</span>` : `<button class="btn btn-accent" data-act="pay" ${b.items?.length ? '' : 'disabled'}>Tính tiền</button>`}`;
+  } else if (cart.length) {
     bar.innerHTML = `<button class="cb-info" data-act="opencart"><span class="cb-count">${totalCount}</span><span class="cb-text"><b>${money(totalAmount)}</b><small>Bill tạm tính · chạm để xem món</small></span></button>
-      ${cart.length ? `<button class="btn btn-primary" data-act="send" ${sending ? 'disabled' : ''}>${icon('send')} Gửi bếp</button>` : b.status === 'waiting' ? `<span class="pill st-waiting" style="align-self:center">Chờ TT</span>` : `<button class="btn btn-accent" data-act="pay">Tính tiền</button>`}`;
-  } else if (b) {
-    bar.innerHTML = `<button class="cb-info" data-act="opencart"><span class="cb-count" style="background:var(--accent)">${sent.count}</span><span class="cb-text"><b>${money(sent.total)}</b><small>Bill tạm tính · chạm để xem món</small></span></button>
-      ${b.status === 'waiting' ? `<span class="pill st-waiting" style="align-self:center">Chờ TT</span>` : `<button class="btn btn-accent" data-act="pay" ${b.items?.length ? '' : 'disabled'}>Tính tiền</button>`}`;
+      <button class="btn btn-primary" data-act="send" ${sending ? 'disabled' : ''}>${icon('send')} Gửi bếp</button>`;
   } else bar.innerHTML = `<span class="cb-info"><span class="cb-text"><b>Bàn trống</b><small>Chọn món để mở bàn</small></span></span>`;
 }
 
@@ -256,6 +257,48 @@ async function move() {
   } catch (e) { toast(e.message, 'err'); }
 }
 
+async function merge() {
+  const source = billOfTable(tableById(tableId));
+  if (!source) return;
+  const targets = store.tables.filter(t => t.id !== tableId);
+  const to = await pickBox({
+    title: `Ghép ${source.tableName} vào bàn`,
+    items: targets.map(t => ({ label: t.name, sub: billOfTable(t) ? 'Có khách' : 'Bàn trống', value: t.id })),
+    empty: 'Không còn bàn khác để ghép',
+  });
+  if (!to) return;
+  const toTable = tableById(to);
+  const dstBill = billOfTable(toTable);
+  if (!dstBill) {
+    try {
+      await moveTable(tableId, to);
+      toast(`Đã chuyển sang ${toTable.name}`);
+      location.hash = '#/order/' + to;
+    } catch (e) { toast(e.message, 'err'); }
+    return;
+  }
+  if (!await confirmBox(`Ghép toàn bộ món của <b>${esc(source.tableName)}</b> vào <b>${esc(toTable.name)}</b>?`)) return;
+  try {
+    await mergeBills(source.id, dstBill.id, store.user.name);
+    localStorage.removeItem(cartKey()); cart = [];
+    toast('Đã ghép bàn'); location.hash = '#/order/' + store.bills[dstBill.id].tableId;
+  } catch (e) { toast(e.message || 'Ghép bàn thất bại', 'err'); }
+}
+
+async function voidSent(itemId) {
+  const b = billOfTable(tableById(tableId));
+  const it = b?.items?.find(item => item.id === itemId);
+  if (!b || !it || it.void || store.user.role !== 'cashier') return;
+  const reason = await promptBox({ title: `Hủy món · ${it.name}`, label: 'Lý do hủy', chips: store.settings.voidReasons || [], required: true, okText: 'Hủy món' });
+  if (!reason) return;
+  try {
+    await voidItem(b.id, it.id, it.qty, reason, store.user.name);
+    toast(`Đã hủy ${it.qty} ${it.name}`);
+    deliver('kitchen', kitchenText({ tableName: b.tableName, items: [{ ...it }], by: store.user.name, at: Date.now(), cancel: true, reason }), { title: 'Báo hủy món cho bếp' });
+    renderCart();
+  } catch (e) { toast(e.message || 'Hủy món thất bại', 'err'); }
+}
+
 async function editNote(i) {
   const c = cart[i];
   const v = await promptBox({ title: `Ghi chú · ${c.name}`, value: c.note, placeholder: 'VD: ít cay, không hành…', chips: store.settings.noteChips || [] });
@@ -309,7 +352,10 @@ export default {
         case 'pay': pay(); break;
         case 'reopen': { const b = billOfTable(tableById(tableId)); await reopenBill(b.id); toast('Đã mở lại đơn để gọi thêm'); break; }
         case 'move': move(); break;
+        case 'merge': merge(); break;
+        case 'voidsent': voidSent(t.dataset.id); break;
         case 'opencart': openOrderReceipt(); break;
+        case 'openCartSheet': setCartOpen(true); break;
         case 'closecart': setCartOpen(false); break;
         case 'soldmode': soldMode = !soldMode; el.querySelector('#op').classList.toggle('soldmode', soldMode); renderHead(); renderCats(); renderMenu(); break;
       }

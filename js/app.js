@@ -9,7 +9,7 @@ import { APP_VERSION } from './config.js';
 
 import login from './pages/login.js?v=1.0.41';
 import tables from './pages/tables.js?v=1.0.43';
-import order from './pages/order.js?v=1.0.41';
+import order from './pages/order.js?v=1.0.46';
 import orders from './pages/orders.js?v=1.0.41';
 import bill from './pages/cashier.js?v=1.0.41';
 import history from './pages/history.js?v=1.0.41';

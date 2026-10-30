@@ -1,8 +1,9 @@
 // ===== O01 / C01 – Sơ đồ bàn (+ bảng điều khiển thu ngân) =====
-import { store, billOfTable } from '../store.js';
-import { icon, setTitle } from '../ui.js';
+import { store, billOfTable, tableById } from '../store.js';
+import { icon, toast, pickBox, confirmBox, setTitle } from '../ui.js';
 import { esc, short, minutesSince, dur } from '../utils.js';
 import { calc } from '../bill.js';
+import { moveTable, mergeBills } from '../actions.js';
 
 let el, area = localStorage.getItem('ql_area') || 'all', tick, selectedTableId = null, statusFilter = 'all';
 
@@ -13,12 +14,62 @@ function tableCard(t) {
   const min = b ? minutesSince(b.openedAt) : 0;
   const long = b && min >= (store.settings.longSitMinutes || 120);
   const isNew = b && store.unseen.has(b.id) && store.user.role === 'cashier';
-  return `<button class="tcard st-${st} ${long ? 'long' : ''} ${selectedTableId === t.id ? 'selected' : ''}" data-id="${t.id}" aria-label="${esc(t.name)}: ${st === 'empty' ? 'trống' : st === 'waiting' ? 'chờ thanh toán' : 'đang phục vụ'}">
+  return `<div class="tcard st-${st} ${long ? 'long' : ''} ${selectedTableId === t.id ? 'selected' : ''}" data-id="${t.id}">
     ${isNew ? '<span class="new-dot" aria-label="Có cập nhật mới"></span>' : ''}
-    <span class="tc-top"><span class="tc-name">${esc(t.name)}</span></span>
-    <span class="tc-mid">${b ? (c.count ? short(c.total) : 'Mới mở') : 'Trống'}</span>
-    <span class="tc-bot">${!b ? 'Sẵn sàng' : st === 'waiting' ? `<b class="text-accent">${icon('cash')} Chờ thanh toán</b>` : `${icon('clock')}${dur(min)} · ${c.count} món`}</span>
-  </button>`;
+    <button class="tc-main" aria-label="${esc(t.name)}: ${st === 'empty' ? 'trống' : st === 'waiting' ? 'chờ thanh toán' : 'đang phục vụ'}">
+      <span class="tc-top"><span class="tc-name">${esc(t.name)}</span></span>
+      <span class="tc-mid">${b ? (c.count ? short(c.total) : 'Mới mở') : 'Trống'}</span>
+      <span class="tc-bot">${!b ? 'Sẵn sàng' : st === 'waiting' ? `<b class="text-accent">${icon('cash')} Chờ thanh toán</b>` : `${icon('clock')}${dur(min)} · ${c.count} món`}</span>
+    </button>
+    ${b ? `<div class="tc-acts">
+      <button class="tc-act" data-act="move" data-id="${t.id}" title="Đổi bàn" aria-label="Đổi bàn ${esc(t.name)}">${icon('move')}</button>
+      <button class="tc-act" data-act="merge" data-id="${t.id}" title="Ghép bàn" aria-label="Ghép bàn ${esc(t.name)}">${icon('merge')}</button>
+    </div>` : ''}
+  </div>`;
+}
+
+async function doMove(t) {
+  const empties = store.tables.filter(x => x.id !== t.id && !billOfTable(x));
+  const to = await pickBox({
+    title: `Đổi bàn · ${t.name}`,
+    items: empties.map(x => ({ label: x.name, sub: store.areas.find(a => a.id === x.areaId)?.name, value: x.id })),
+    empty: 'Không còn bàn trống',
+  });
+  if (!to) return;
+  try {
+    await moveTable(t.id, to);
+    selectedTableId = null;
+    toast(`Đã chuyển sang ${tableById(to).name}`);
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function doMerge(t) {
+  const source = billOfTable(t);
+  if (!source) return;
+  const targets = store.tables.filter(x => x.id !== t.id);
+  const to = await pickBox({
+    title: `Ghép ${source.tableName} vào bàn`,
+    items: targets.map(x => ({ label: x.name, sub: billOfTable(x) ? 'Có khách' : 'Bàn trống', value: x.id })),
+    empty: 'Không còn bàn khác để ghép',
+  });
+  if (!to) return;
+  const toTable = tableById(to);
+  const dstBill = billOfTable(toTable);
+  if (!dstBill) {
+    try {
+      await moveTable(t.id, to);
+      selectedTableId = null;
+      toast(`Đã chuyển sang ${toTable.name}`);
+    } catch (e) { toast(e.message, 'err'); }
+    return;
+  }
+  if (!await confirmBox(`Ghép toàn bộ món của <b>${esc(source.tableName)}</b> vào <b>${esc(toTable.name)}</b>?`)) return;
+  try {
+    await mergeBills(source.id, dstBill.id, store.user.name);
+    localStorage.removeItem('ql_cart_' + t.id);
+    selectedTableId = null;
+    toast('Đã ghép bàn');
+  } catch (e) { toast(e.message || 'Ghép bàn thất bại', 'err'); }
 }
 
 function queueHTML() {
@@ -86,6 +137,12 @@ export default {
       if (s) { statusFilter = statusFilter === s.dataset.status ? 'all' : s.dataset.status; selectedTableId = null; return render(); }
       const a = e.target.closest('[data-area]');
       if (a) { area = a.dataset.area; localStorage.setItem('ql_area', area); return render(); }
+      const act = e.target.closest('.tc-acts [data-act]');
+      if (act) {
+        const table = store.tables.find(x => x.id === act.dataset.id);
+        if (table) { if (act.dataset.act === 'move') doMove(table); else doMerge(table); }
+        return;
+      }
       const t = e.target.closest('.tcard');
       if (!t) return;
       if (selectedTableId !== t.dataset.id) { selectedTableId = t.dataset.id; render(); return; }
