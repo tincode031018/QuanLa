@@ -1,31 +1,26 @@
 # 🌿 Quán Lá – Webapp quản lý quán ăn
 
-Gọn nhẹ (HTML + CSS + JavaScript thuần, **không framework, không cần build**), Mobile-first, chạy trên điện thoại / tablet / máy tính.
-Có 2 vai trò **Order** và **Thu Ngân**. Gửi phiếu bếp và hóa đơn lên **nhóm Zalo**, in bằng **máy in nhiệt 80mm**.
+Ứng dụng web viết bằng HTML, CSS và JavaScript ES modules, không dùng framework và không cần bước build. Dữ liệu nhiều thiết bị đồng bộ qua Firebase Authentication và Cloud Firestore. Ứng dụng có hai vai trò **Order** và **Thu ngân**, cùng các luồng gọi món, thanh toán, báo bếp, Zalo và in hóa đơn.
 
-- Dung lượng code app: ~200 KB, khoảng 55 KB khi nén gzip, thư viện Firebase chỉ tải khi bật chế độ thật
-- Không ảnh nặng: icon SVG nội tuyến, âm báo tạo bằng Web Audio (không có file mp3)
-- Cài được như app (PWA), mở lại tức thì nhờ cache
+> **Tài liệu theo hiện trạng mã nguồn.** Ứng dụng hiện yêu cầu Firebase; chế độ database demo localStorage đã bị gỡ. Không sử dụng PIN demo `111111` / `999999`.
 
 ---
 
-## 1. Chạy thử ngay (Chế độ DEMO)
+## 1. Chạy ứng dụng
 
-App yêu cầu cấu hình Firebase trong `js/config.js`; nếu chưa có cấu hình, app dừng và báo thiếu thiết lập thay vì tạo dữ liệu demo.
+Có thể phục vụ thư mục bằng một static web server:
 
-```bash
-cd quan-la
-python3 -m http.server 8080      # hoặc: npx serve .
-# mở http://localhost:8080
+```powershell
+python -m http.server 8080 --bind 127.0.0.1
 ```
 
-| Vai trò | Mã PIN demo |
-|---|---|
-| Order | `111111` |
-| Thu Ngân | `999999` |
+Sau đó mở `http://127.0.0.1:8080`. Trên Windows có thể chạy `Chay_Quan_La.bat`.
 
-> Mẹo: mở 2 tab. Tab 1 đăng nhập Order và gọi món, tab 2 đăng nhập Thu Ngân để xem đơn tới ngay (có chuông báo).
-> Lưu ý: 2 tab dùng chung phiên đăng nhập. Muốn thử 2 vai trò cùng lúc, hãy dùng thêm một cửa sổ ẩn danh, hoặc dùng Firebase.
+Local server chỉ phục vụ file giao diện, **không thay thế Firebase**. Cần có Internet, Firebase Web App hợp lệ trong `js/config.js`, bật Email/Password Authentication, tài khoản nhân viên và Firestore Rules. Nếu thiếu cấu hình hoặc Firebase chưa sẵn sàng, đăng nhập và đồng bộ dữ liệu sẽ không hoạt động.
+
+Mã PIN là mật khẩu của tài khoản Firebase, không phải PIN dùng chung để chạy demo. Order đăng nhập bằng `order@quanla.app`, Thu ngân bằng `thungan@quanla.app`; tài khoản phải được tạo trong Firebase Authentication trước khi sử dụng.
+
+Ở màn hình nhập PIN, có thể bật **Giữ đăng nhập trên thiết bị này** để Firebase duy trì phiên sau khi đóng/mở lại app. Tùy chọn này không lưu PIN; nếu tắt, phiên chỉ tồn tại trong tab hiện tại. Trên thiết bị dùng chung nên tắt tùy chọn và luôn đăng xuất sau khi dùng.
 
 ---
 
@@ -43,15 +38,15 @@ quan-la/
 ├── js/
 │   ├── config.js         ⚙️ Cấu hình Firebase + email 2 tài khoản
 │   ├── app.js            Khởi động + điều hướng + phân quyền trang
-│   ├── db.js             Lớp dữ liệu (Demo localStorage | Firebase Firestore)
+│   ├── db.js             Firebase Authentication + Firestore
 │   ├── store.js          Trạng thái chung + đồng bộ realtime + thực đơn khởi tạo
-│   ├── auth.js           Đăng nhập PIN, chọn tên, tự khóa
+│   ├── auth.js           Đăng nhập Firebase, phiên đăng nhập, tự khóa
 │   ├── actions.js        Nghiệp vụ: mở bàn, gửi món, chuyển/gộp bàn, hủy món, thanh toán
 │   ├── bill.js           Tính tiền, mẫu phiếu bếp/hóa đơn (chữ, bản in, ảnh), VietQR
 │   ├── zalo.js           Gửi Zalo tự động (Worker) + chia sẻ 1 chạm
 │   ├── notify.js         Chuông, rung, thông báo cho thu ngân
 │   ├── ui.js, utils.js   Icon, modal, toast, định dạng tiền/giờ
-│   └── pages/            login, tables, order, orders, cashier, history, reports, admin, soldout
+│   └── pages/            login, tables, order, orders, cashier, history, reports, admin, soldout, printer, inventory
 ├── worker/zalo-worker.js Cloudflare Worker trung gian gửi Zalo Bot
 ├── firestore.rules       Luật bảo mật phân quyền Order / Thu Ngân
 └── firebase.json         Cấu hình deploy Firebase Hosting
@@ -59,61 +54,68 @@ quan-la/
 
 ---
 
-## 3. Chạy thật trên nhiều thiết bị (Firebase – miễn phí)
+## 3. Firebase và triển khai
 
-1. Vào **https://console.firebase.google.com**, chọn **Add project** và đặt tên, ví dụ `quan-la`.
-2. **Build → Authentication → Get started → Email/Password → Enable**.
-   Ở tab **Users → Add user**, tạo 2 tài khoản:
-   | Email | Mật khẩu (= mã PIN 6 số) |
-   |---|---|
-   | `order@quanla.app` | ví dụ `246810` |
-   | `thungan@quanla.app` | ví dụ `135790` |
-3. **Build → Firestore Database → Create database**. Chọn vùng `asia-southeast1` (Singapore) và chế độ **Production**.
-4. Mở tab **Rules**, dán nội dung file `firestore.rules`, rồi bấm **Publish**.
-5. **Project settings → Your apps → Web (</>)**, đăng ký app rồi copy đoạn `firebaseConfig`
-   và dán vào `js/config.js`:
-   ```js
-   export const FIREBASE_CONFIG = { apiKey: "...", authDomain: "...", projectId: "...", ... };
-   ```
-6. Đưa app lên mạng (chọn 1 cách):
-   - **Firebase Hosting**: `npm i -g firebase-tools` → `firebase login` → `firebase init hosting` (chọn thư mục hiện tại, không ghi đè index.html) → `firebase deploy`
-   - **Cloudflare Pages / Netlify / GitHub Pages**: kéo thả cả thư mục `quan-la` lên.
-7. **Thu Ngân phải đăng nhập lần đầu** để app tự tạo dữ liệu ban đầu (10 bàn và thực đơn Quán Lá). Sau đó Order mới đăng nhập được.
+Ứng dụng kết nối tới Firebase theo cấu hình trong `js/config.js`. Nếu đổi Firebase project, cập nhật `FIREBASE_CONFIG`, tạo hai tài khoản Authentication tương ứng với `ACCOUNTS`, rồi triển khai `firestore.rules` từ repository. Không thay đổi email trong `config.js` mà quên cập nhật `firestore.rules`.
 
-> Mất mạng: Order vẫn gọi món được, có biểu tượng "Offline". App tự đồng bộ khi có mạng lại.
-> Đăng nhập lần đầu thì cần có Internet.
+Thu ngân cần đăng nhập Firebase thành công để khởi tạo/cập nhật dữ liệu ban đầu. Sau đó Order có thể đăng nhập bằng tài khoản của mình. Đăng nhập ban đầu cần Internet; Firestore có thể lưu thay đổi offline và đồng bộ lại khi mạng phục hồi, nhưng không nên xem offline là đã xác nhận thao tác thành công ở máy chủ.
+
+Có thể chạy bằng static hosting hoặc Firebase Hosting. Repository đã có `firebase.json`; nếu triển khai bằng Firebase CLI, liên kết đúng Firebase project trước khi chạy `firebase deploy`. Hosting phải phục vụ nguyên cấu trúc thư mục để các đường dẫn tương đối trong app tiếp tục hoạt động.
 
 ---
 
-## 4. Gửi lên nhóm Zalo
+## 4. Zalo Bot: hiện trạng và điểm cần kiểm tra
 
-### Cách B – Chia sẻ 1 chạm (luôn dùng được, không cần cài gì)
-Khi Order gửi bếp hoặc Thu Ngân thanh toán, app hiện bảng gửi:
-- **Điện thoại**: bấm **Chia sẻ Zalo**, chọn Zalo, chọn nhóm rồi Gửi. Có thể gửi **dạng ảnh**.
-- **Máy tính**: bấm **Sao chép** rồi dán (Ctrl+V) vào Zalo PC.
+Ứng dụng gửi yêu cầu tự động theo luồng **app → Cloudflare Worker → Zalo Bot API → nhóm**. Worker giữ Bot Token trong Cloudflare KV; app không lưu token trong Firestore hoặc localStorage.
 
-### Cách A – Gửi TỰ ĐỘNG qua Zalo Bot
-> ⚠️ Theo tài liệu Zalo, tính năng **Bot trong nhóm vẫn đang Beta**. Nếu gửi lỗi, app tự chuyển sang Cách B.
+### Nội dung nào được gửi và khi nào
 
-1. **Tạo bot**: trong Zalo, tìm OA **"Zalo Bot Manager"**, chọn *Tạo bot* (tên bắt đầu bằng "Bot", ví dụ *Bot Quán Lá*). Bạn sẽ nhận **Bot Token** qua tin nhắn.
-2. **Tạo Worker**: vào https://dash.cloudflare.com, chọn **Workers & Pages → Create → Worker**. Dán nội dung `worker/zalo-worker.js` rồi bấm **Deploy**.
-3. Mở **Settings → Variables and Secrets** của Worker và thêm:
-   | Tên | Giá trị |
-   |---|---|
-   | `BOT_TOKEN` | Token bot |
-   | `APP_KEY` | Mật khẩu tự đặt (ví dụ chuỗi 20 ký tự ngẫu nhiên) |
-   | `WEBHOOK_SECRET` | Chuỗi ngẫu nhiên khác |
-   | `ALLOW_ORIGIN` | Địa chỉ app, ví dụ `https://quan-la.web.app` |
-4. Mở trình duyệt vào `https://<worker>.workers.dev/setup?key=<APP_KEY>` một lần để đăng ký webhook.
-5. **Thêm bot vào nhóm**: Mini App *Zalo Bot Creator*, chọn bot, chọn *Mời Bot vào nhóm*, gửi link vào nhóm. Trưởng nhóm bấm link rồi Xác nhận.
-6. Trong nhóm, gõ **@Bot Quán Lá /id**. Bot sẽ trả lời **ID nhóm**.
-7. Vào app, chọn **Quản lý → Cài đặt → Gửi nhóm Zalo**, bật *Gửi TỰ ĐỘNG*, rồi nhập địa chỉ Worker, App Key, ID nhóm Bếp (và ID nhóm Hóa đơn nếu khác). Bấm **Gửi tin thử** rồi **Lưu cài đặt**.
+| Nội dung | Thời điểm gửi trong app | Nhóm đích |
+|---|---|---|
+| Phiếu bếp | Order bấm **Gửi bếp** | ID nhóm Bếp |
+| Báo hủy món | Order/Thu ngân hủy món đã gửi | ID nhóm Bếp |
+| Hóa đơn hoàn chỉnh | Thu ngân bấm **Hoàn tất thanh toán** | ID nhóm Hóa đơn; nếu để trống thì dùng nhóm Bếp |
+| Báo cáo | Người dùng bấm gửi Zalo ở trang Báo cáo | Dùng cấu hình nhóm hóa đơn/nhóm bếp |
 
-Nội dung được gửi:
-- 🔥 **Phiếu bếp**: mỗi lần Order bấm *Gửi bếp* (bếp xem trên Zalo và làm theo)
-- ❌ **Hủy món / hủy bàn**: báo bếp khi Thu Ngân hủy
-- 🧾 **Hóa đơn**: khi Thu Ngân hoàn tất thanh toán
-- 📊 **Báo cáo**: bấm *Gửi Zalo* ở trang Báo cáo (ví dụ cuối ngày)
+**Lưu ý về vướng mắc hiện tại:** mã nguồn chỉ gửi **phiếu bếp** khi Order nhận/gửi đơn. Hóa đơn (`billText`) chỉ được gửi tự động sau khi Thu ngân hoàn tất thanh toán. Vì vậy, yêu cầu bot tự gửi **hóa đơn đầy đủ ngay khi đơn vừa được nhận** hiện chưa được thực hiện trong mã. Đây là trạng thái cần xử lý; cấu hình Worker đúng không làm hóa đơn tự phát sinh ở thời điểm nhận đơn.
+
+### Cấu hình tự động
+
+Trong **Quản lý → Cài đặt → Gửi nhóm Zalo**:
+
+1. Bật **Gửi phiếu bếp**, **Gửi hóa đơn** tương ứng và **Gửi TỰ ĐỘNG qua Zalo Bot**.
+2. Tạo một KV namespace trong Cloudflare, rồi gắn vào Worker với tên binding `ZALO_CONFIG`; deploy mã mới từ `worker/zalo-worker.js`.
+3. Trong Worker, cấu hình `ADMIN_KEY` (Secret), `APP_KEY` (Secret), `WEBHOOK_SECRET` (Secret) và `ALLOW_ORIGIN` (origin chính xác của website). `APP_KEY` phải trùng giá trị nhập trong app.
+4. Nhập Worker URL, App Key, ID nhóm Bếp và (nếu khác) ID nhóm Hóa đơn. Dán Bot Token và `ADMIN_KEY`, bấm **Lưu Bot Token vào Worker**. Token được gửi qua HTTPS và lưu trong KV; app không ghi Bot Token hoặc `ADMIN_KEY` vào Firestore/localStorage.
+5. Bấm **Lưu cài đặt** để lưu Worker URL, App Key, ID nhóm và các tùy chọn gửi. Nút **Gửi tin thử** kiểm tra nhóm Bếp; nó không kiểm tra ID nhóm Hóa đơn.
+6. Sau khi hoàn tất thanh toán thử, kiểm tra nhóm Hóa đơn để đối soát.
+
+Worker trong `worker/zalo-worker.js` dùng các bindings/secrets:
+
+| Tên | Mục đích |
+|---|---|
+| `ZALO_CONFIG` | KV namespace lưu Bot Token; bắt buộc để cấu hình token từ giao diện |
+| `ADMIN_KEY` | Secret quản trị, dùng riêng cho `POST /configure` |
+| `APP_KEY` | Khóa app, phải trùng với cài đặt trong app (Secret) |
+| `WEBHOOK_SECRET` | Mã xác thực webhook (Secret) |
+| `ALLOW_ORIGIN` | Origin chính xác của website app |
+| `BOT_TOKEN` | Secret tùy chọn, chỉ dùng dự phòng cho cấu hình cũ nếu KV chưa có token |
+
+Worker cung cấp `GET /` để kiểm tra dịch vụ, `POST /configure` để lưu token (header `X-Admin-Key`), `POST /send`, `GET /setup?key=...` để đăng ký webhook và `POST /webhook` để bot trả lời lệnh lấy ID nhóm. Không tạo endpoint đọc lại token. Bot phải được thêm vào đúng group và được phép nhắn trong group.
+
+### Khi bot không gửi được hóa đơn tự động
+
+1. Xác nhận thời điểm thao tác: hóa đơn chỉ gửi sau **Hoàn tất thanh toán**, không gửi ngay khi Order bấm **Gửi bếp**.
+2. Xác nhận đã bật **Gửi hóa đơn** và **Gửi TỰ ĐỘNG**, Worker URL/App Key chính xác, Worker đã deploy phiên bản mới.
+3. Kiểm tra ID nhóm Hóa đơn; nếu bỏ trống, app dùng ID nhóm Bếp. Tin thử trong trang cài đặt chỉ nhắm tới nhóm Bếp.
+4. Sau thanh toán, xem thông báo trong app và Network/Console của trình duyệt; kiểm tra log/response từ Worker, đặc biệt lỗi xác thực (`401`), lỗi Worker/Zalo API (`5xx`) hoặc lỗi mạng.
+5. Nếu tự động thất bại, app có thể hiện bảng chia sẻ thủ công. Việc này là phương án dự phòng, không chứng minh gửi tự động đã thành công.
+
+Hiện chưa có log/response thực tế của lần gửi bị lỗi trong tài liệu này, nên chưa kết luận nguyên nhân cụ thể của sự cố group Zalo.
+
+### Chia sẻ thủ công
+
+Khi luồng tự động không dùng được, trên điện thoại có thể chọn chia sẻ Zalo; trên máy tính có thể sao chép nội dung rồi dán vào Zalo. Đây là thao tác thủ công, không phải bot tự gửi.
 
 ---
 
@@ -126,7 +128,7 @@ Nội dung được gửi:
    chrome.exe --kiosk-printing https://quan-la.web.app
    ```
    rồi bật *Tự in hóa đơn* trong Cài đặt.
-4. Hóa đơn có **mã QR VietQR** đúng số tiền để khách quét (bật/tắt trong Cài đặt).
+4. Hóa đơn có **mã QR VietQR** đúng số tiền để khách quét (bật/tắt trong **Máy in**). Tại **Máy in → Nội dung hóa đơn**, bật/tắt **Hiện dòng tạm tính trên bill in** để điều khiển dòng này trên bản in; mặc định là hiện.
 
 ---
 
@@ -142,6 +144,7 @@ Nội dung được gửi:
 ORDER  : Chọn bàn → chạm món (+ ghi chú) → GỬI BẾP ──► phiếu bếp lên nhóm Zalo
                                     │                  └► máy Thu Ngân kêu chuông
          Khách gọi thêm → GỬI BẾP (lần 2, 3…)
+         Xem đơn đang phục vụ → mở chi tiết đơn → hủy món đã gửi (nhập lý do; app báo bếp)
          Khách xin tính tiền → TÍNH TIỀN ──► bàn chuyển màu cam, báo Thu Ngân
 THU NGÂN: Mở bill → giảm giá / phụ thu → Tiền mặt (tự tính tiền thối) | Chuyển khoản (QR) | Kết hợp
          → HOÀN TẤT ──► lưu lịch sử + báo cáo, gửi hóa đơn lên Zalo, in hóa đơn, bàn trống lại
@@ -151,7 +154,7 @@ THU NGÂN: Mở bill → giảm giá / phụ thu → Tiền mặt (tự tính ti
 |---|:-:|:-:|
 | Sơ đồ bàn, gọi món, ghi chú, chuyển bàn | ✅ | ✅ |
 | Sửa/xóa món **chưa gửi** | ✅ | ✅ |
-| Hủy món **đã gửi** (bắt buộc lý do) | ❌ | ✅ |
+| Xem đơn đang phục vụ, hủy món **đã gửi** (bắt buộc lý do) | ✅ | ✅ |
 | Yêu cầu tính tiền, báo hết món | ✅ | ✅ |
 | Giảm giá, phụ thu, thu tiền, in, gửi hóa đơn | ❌ | ✅ |
 | Gộp bàn, hủy bill | ❌ | ✅ |
@@ -160,7 +163,7 @@ THU NGÂN: Mở bill → giảm giá / phụ thu → Tiền mặt (tự tính ti
 
 ---
 
-## 8. Ghi chú
-- Dữ liệu mẫu có **10 bàn** chia 2 khu vực. Thêm/bớt bàn ở **Quản lý → Bàn & khu vực** (có nút *+ Nhiều bàn*).
-- Đổi mã PIN: chế độ demo đổi trong app. Với Firebase, Thu Ngân tự đổi PIN của mình trong app; PIN Order đổi trong Firebase Console.
-- Bộ nhớ demo nằm trong trình duyệt. Nhớ dùng **Sao lưu** thường xuyên, hoặc chuyển sang Firebase để dùng lâu dài.
+## 8. Sao lưu và ghi chú
+- Dữ liệu ứng dụng lưu trong Firestore. Các nút **Sao lưu/Khôi phục** chỉ xuất hiện ở chế độ local cũ; chúng không sao lưu hay khôi phục Firestore. Hãy dùng công cụ sao lưu Firebase/Firestore phù hợp để bảo vệ dữ liệu thật.
+- Thu ngân có thể đổi PIN của tài khoản đang đăng nhập trong app. PIN Order cần đổi trong Firebase Console (Authentication).
+- `BAO_CAO_CAU_TRUC.md` là tài liệu thiết kế ban đầu; nếu nội dung khác README hoặc mã nguồn hiện tại, ưu tiên mã nguồn và README này.

@@ -7,16 +7,16 @@ import { esc, initials } from './utils.js';
 import { unlockAudio, watchBills } from './notify.js';
 import { APP_VERSION } from './config.js';
 
-import login from './pages/login.js?v=1.0.41';
+import login from './pages/login.js?v=1.0.42';
 import tables from './pages/tables.js?v=1.0.43';
 import order from './pages/order.js?v=1.0.46';
-import orders from './pages/orders.js?v=1.0.41';
+import orders from './pages/orders.js?v=1.0.42';
 import bill from './pages/cashier.js?v=1.0.41';
 import history from './pages/history.js?v=1.0.41';
 import reports from './pages/reports.js?v=1.0.42';
-import admin from './pages/admin.js?v=1.0.43';
+import admin from './pages/admin.js?v=1.0.45';
 import soldout from './pages/soldout.js?v=1.0.41';
-import printer from './pages/printer.js?v=1.0.41';
+import printer from './pages/printer.js?v=1.0.42';
 import inventory from './pages/inventory.js?v=1.0.48';
 
 const ROUTES = { login, tables, order, orders, bill, history, reports, admin, soldout, printer, inventory };

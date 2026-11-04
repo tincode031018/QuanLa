@@ -5,7 +5,7 @@ import { verifyPin, logout, ROLE_NAME } from '../auth.js';
 import { icon, logo, toast } from '../ui.js';
 import { esc } from '../utils.js';
 
-let el, step, role, pin;
+let el, step, role, pin, rememberLogin = false;
 
 function render() {
   const s = store.settings;
@@ -27,6 +27,9 @@ function render() {
         ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}
         <button class="fn" data-k="back">${icon('back')} Quay lại</button><button data-k="0">0</button><button class="fn" data-k="del" aria-label="Xóa">⌫</button>
       </div>`;
+    if (db.mode === 'firebase') {
+      inner += `<label class="remember-login"><input type="checkbox" id="rememberLogin" ${rememberLogin ? 'checked' : ''}><span><b>Giữ đăng nhập trên thiết bị này</b><small>Không lưu mã PIN. Tắt tùy chọn này nếu dùng thiết bị chung.</small></span></label>`;
+    }
   }
   el.innerHTML = `<div class="login"><div class="login-card">
     <div class="login-logo">${logo()}<div><h1>${esc(s.shopName)}</h1><p class="muted small">${esc(s.slogan || 'Quản lý quán ăn')}</p></div></div>
@@ -36,7 +39,7 @@ function render() {
 async function submitPin() {
   const p = pin;
   try {
-    await verifyPin(role, p);
+    await verifyPin(role, p, rememberLogin);
     if (db.mode === 'firebase' && role === 'cashier') await seedIfNeeded();
     location.hash = '#/tables';
   } catch (e) {
@@ -58,7 +61,7 @@ function key(k) {
 
 export default {
   async mount(root) {
-    el = root; step = 'role'; role = store.user?.role; pin = '';
+    el = root; step = 'role'; role = store.user?.role; pin = ''; rememberLogin = false;
     render();
     const onClick = e => {
       const t = e.target.closest('[data-role],[data-k],[data-act]');
@@ -78,8 +81,12 @@ export default {
       else if (e.key === 'Backspace') key('del');
       else if (e.key === 'Escape') key('back');
     };
+    const onChange = e => {
+      if (e.target.id === 'rememberLogin') rememberLogin = e.target.checked;
+    };
     el.addEventListener('click', onClick);
+    el.addEventListener('change', onChange);
     addEventListener('keydown', onKey);
-    return () => { el.removeEventListener('click', onClick); removeEventListener('keydown', onKey); };
+    return () => { el.removeEventListener('click', onClick); el.removeEventListener('change', onChange); removeEventListener('keydown', onKey); };
   },
 };

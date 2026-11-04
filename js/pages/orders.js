@@ -1,15 +1,18 @@
 // ===== Danh sách đơn đang mở (Order: theo dõi · Thu ngân: hàng đợi thanh toán) =====
 import { store } from '../store.js';
-import { icon, setTitle } from '../ui.js';
+import { icon, setTitle, toast, promptBox } from '../ui.js';
 import { esc, money, fmtTime, minutesSince, dur } from '../utils.js';
-import { calc, groupItems } from '../bill.js';
+import { calc, rounds, kitchenText } from '../bill.js';
+import { voidItem } from '../actions.js';
+import { deliver } from '../zalo.js';
 
-let el, filter = 'all';
+let el, filter = 'all', expandedBillId = null;
 
 function render() {
   const isCashier = store.user.role === 'cashier';
   const all = Object.values(store.bills).sort((a, b) => (a.status === 'waiting' ? 0 : 1) - (b.status === 'waiting' ? 0 : 1) || (a.requestedAt || a.openedAt) - (b.requestedAt || b.openedAt));
   const list = all.filter(b => filter === 'all' || b.status === filter);
+  const visible = expandedBillId ? list.filter(b => b.id === expandedBillId) : list;
   const cnt = s => all.filter(b => b.status === s).length;
   el.innerHTML = `
     <div class="page-head"><h1>${isCashier ? 'Thu ngân' : 'Đơn đang phục vụ'}</h1></div>
@@ -18,9 +21,19 @@ function render() {
       <button class="chip ${filter === 'waiting' ? 'active' : ''}" data-f="waiting">Chờ thanh toán <span class="cnt">${cnt('waiting')}</span></button>
       <button class="chip ${filter === 'open' ? 'active' : ''}" data-f="open">Đang phục vụ <span class="cnt">${cnt('open')}</span></button>
     </div>
-    ${list.length ? `<div class="orders-grid">${list.map(b => {
+    ${visible.length ? `<div class="orders-grid">${visible.map(b => {
       const c = calc(b);
-      const g = groupItems(c.items);
+      const details = expandedBillId === b.id ? `<div class="order-detail">
+        ${rounds(b).map(r => `<section class="order-detail-round">
+          <div class="xs muted bold">LẦN ${r.round} · ${fmtTime(r.at)}${r.by ? ` · ${esc(r.by)}` : ''}</div>
+          ${r.items.map(it => `<div class="order-detail-item ${it.void ? 'void' : ''}">
+            <span class="order-detail-qty">${it.qty} ×</span>
+            <span class="order-detail-name">${esc(it.name)}${it.note ? `<small>${esc(it.note)}</small>` : ''}${it.void ? `<small>Đã hủy: ${esc(it.voidReason || '')}</small>` : ''}</span>
+            <b>${money(it.qty * it.price)}</b>
+            ${!it.void && ['open', 'waiting'].includes(b.status) ? `<button class="btn btn-sm btn-danger" data-void-item="${esc(b.id)}" data-item-id="${esc(it.id)}">Hủy món</button>` : ''}
+          </div>`).join('')}
+        </section>`).join('')}
+      </div>` : '';
       return `<div class="card card-pad order-pay-card ${b.status === 'waiting' ? 'waiting' : ''}">
         <div class="row-between">
           <div class="row"><b style="font-size:18px">${esc(b.tableName)}</b>
@@ -35,10 +48,12 @@ function render() {
             <b class="num" style="font-size:20px;color:var(--brand)">${money(c.total)}</b>
           </div>
           <div class="btn-row order-card-actions">
+            <button class="btn btn-sm" data-toggle-bill="${esc(b.id)}">${icon(expandedBillId === b.id ? 'up' : 'down')} ${expandedBillId === b.id ? 'Ẩn đơn' : 'Xem đơn'}</button>
             <a class="btn btn-sm" href="#/order/${b.tableId}">${icon('plus')} Gọi món</a>
             ${isCashier ? `<a class="btn btn-sm ${b.status === 'waiting' ? 'btn-accent' : 'btn-primary'}" href="#/bill/${b.id}">${icon('cash')} Thanh toán</a>` : ''}
           </div>
         </div>
+        ${details}
       </div>`;
     }).join('')}</div>` : `<div class="card empty">${icon('list')}<div>Không có đơn nào</div></div>`}`;
 }
@@ -47,7 +62,31 @@ export default {
   async mount(root) {
     el = root; setTitle(store.user.role === 'cashier' ? 'Thu ngân' : 'Đơn');
     render();
-    const onClick = e => { const f = e.target.closest('[data-f]'); if (f) { filter = f.dataset.f; render(); } };
+    const onClick = async e => {
+      const f = e.target.closest('[data-f]');
+      if (f) { filter = f.dataset.f; expandedBillId = null; render(); return; }
+      const toggle = e.target.closest('[data-toggle-bill]');
+      if (toggle) {
+        expandedBillId = expandedBillId === toggle.dataset.toggleBill ? null : toggle.dataset.toggleBill;
+        render();
+        return;
+      }
+      const cancel = e.target.closest('[data-void-item]');
+      if (!cancel) return;
+      const b = store.bills[cancel.dataset.voidItem];
+      const it = b?.items?.find(item => item.id === cancel.dataset.itemId);
+      if (!b || !it || it.void || !['open', 'waiting'].includes(b.status)) return;
+      const reason = await promptBox({ title: `Hủy món · ${it.name}`, label: 'Lý do hủy', chips: store.settings.voidReasons || [], required: true, okText: 'Hủy món' });
+      if (!reason) return;
+      try {
+        await voidItem(b.id, it.id, it.qty, reason, store.user.name);
+        toast(`Đã hủy ${it.qty} ${it.name}`);
+        deliver('kitchen', kitchenText({ tableName: b.tableName, items: [{ ...it }], by: store.user.name, at: Date.now(), cancel: true, reason }), { title: 'Báo hủy món cho bếp' });
+      } catch (err) {
+        toast(err.message || 'Hủy món thất bại', 'err');
+      }
+      render();
+    };
     el.addEventListener('click', onClick);
     const t = setInterval(render, 30000);
     return () => { el.removeEventListener('click', onClick); clearInterval(t); };

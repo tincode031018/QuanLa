@@ -45,6 +45,10 @@
 }
 .pinpad button:active { background: var(--brand-50); transform: scale(.96); }
 .pinpad button.fn { background: transparent; border-color: transparent; box-shadow: none; font-size: 15px; color: var(--muted); }
+.remember-login { display: flex; align-items: flex-start; gap: 10px; max-width: 300px; margin: 16px auto 0; color: var(--text); cursor: pointer; }
+.remember-login input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--brand); flex: 0 0 auto; }
+.remember-login span { display: grid; gap: 3px; font-size: 13px; }
+.remember-login small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
 .name-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .name-btn { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); font-weight: 650; text-align: left; }
 .name-btn:hover { border-color: var(--brand); }
@@ -237,6 +241,10 @@
 .sline .sm { font-variant-numeric: tabular-nums; font-weight: 650; }
 .sline.void { color: var(--muted); text-decoration: line-through; }
 .sline.void .sq { color: var(--muted); }
+.cp-body .sline { align-items: center; gap: 6px; }
+.cp-body .bill-qty { flex: 0 0 auto; }
+.cp-body .bill-qty button { width: 26px; height: 28px; border-radius: 8px; }
+.cp-body .bill-qty span { min-width: 18px; text-align: center; }
 .round { padding: 8px 12px; border-radius: 12px; background: var(--surface-2); margin-bottom: 8px; }
 .round-h { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 2px; }
 .cp-foot { padding: 12px 14px 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
@@ -266,6 +274,16 @@
 .order-card-total { display: flex; align-items: baseline; justify-content: space-between; }
 .order-card-actions { width: 100%; min-width: 0; }
 .order-card-actions > .btn { min-width: 0; padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: center; }
+.order-detail { border-top: 1px dashed var(--line); padding-top: 8px; }
+.order-detail-round + .order-detail-round { margin-top: 10px; }
+.order-detail-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.order-detail-qty { color: var(--brand); font-weight: 800; white-space: nowrap; }
+.order-detail-name { min-width: 0; }
+.order-detail-name small { display: block; color: var(--muted); font-weight: 400; }
+.order-detail-item > b { white-space: nowrap; }
+.order-detail-item.void { color: var(--muted); text-decoration: line-through; }
+.order-detail-item.void small { color: var(--muted); }
+@media (max-width: 480px) { .order-detail-item { grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; } .order-detail-item .btn { grid-column: 2 / -1; justify-self: start; } }
 
 /* Báº£o vá»‡ chá»‘ng trÃ n cho báº¥t ká»³ phiÃªn báº£n nÃ o cá»§a tháº» Ä‘Æ¡n */
 .tgrid > .card, .orders-grid > .card, .order-pay-card {
@@ -297,6 +315,9 @@
 .pay-grid { display: grid; gap: 12px; padding: 12px; }
 .pay-items .sline { padding: 9px 0; border-bottom: 1px dashed var(--line); align-items: center; }
 .pay-items .sline:last-child { border-bottom: 0; }
+.pay-items .bill-qty { flex: 0 0 auto; }
+.pay-items .bill-qty button { width: 26px; height: 28px; border-radius: 8px; }
+.pay-items .bill-qty span { min-width: 18px; }
 
 /* Chiáº¿t kháº¥u, Phá»¥ thu nhá» gá»n 2 cá»™t */
 .adjust-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -358,6 +379,12 @@
 @media (max-width: 899px) {
   .settings-grid.settings-columns { columns: 1; }
   .settings-savebar { bottom: calc(var(--nav-h) + var(--safe-b)); }
+}
+@media (max-width: 600px) {
+  .settings-grid .stack { gap: 8px; }
+  .settings-grid .field { gap: 4px; }
+  .settings-grid .field > span, .settings-grid .xs { line-height: 1.3; }
+  .settings-grid .stack > .divider { margin: 2px 0; }
 }
 .preset-line { display: grid; grid-template-columns: 1fr 90px 92px 38px; gap: 6px; align-items: center; }
 .preset-line .input { min-height: 40px; padding: 6px 10px; }
@@ -527,4 +554,3 @@
 
 .excel-empty { text-align: center; padding: 36px 16px; color: var(--muted); font-size: 14px; }
 .logs-table th, .logs-table td { border-color: var(--line); }
-

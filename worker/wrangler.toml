@@ -1,0 +1,12 @@
+name = "quanla-zalo"
+main = "zalo-worker.js"
+compatibility_date = "2026-10-01"
+account_id = "6d18dade06ce9c6ec6332ea81391165c"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "ZALO_CONFIG"
+id = "cdefc1769b45453db7008cf357c6855d"
+
+[vars]
+ALLOW_ORIGIN = "http://127.0.0.1:8080"

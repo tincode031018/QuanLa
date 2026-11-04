@@ -3,7 +3,7 @@ import { store, tableById, billOfTable, menuById } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, pickBox, setTitle } from '../ui.js';
 import { esc, money, norm, fmtTime, minutesSince, dur } from '../utils.js';
 import { calc, rounds, kitchenText, kitchenPrintHTML, sumItems, itemCount } from '../bill.js?v=1.0.38';
-import { sendItems, requestPayment, reopenBill, moveTable, mergeBills, voidItem, setAvailable } from '../actions.js';
+import { sendItems, requestPayment, reopenBill, moveTable, mergeBills, voidItem, increaseBillItem, setAvailable } from '../actions.js';
 import { deliver } from '../zalo.js';
 
 let el, tableId, cart = [], cat = 'all', q = '', soldMode = false, sending = false, cartOpen = false;
@@ -147,7 +147,10 @@ function renderCart() {
         </div>`).join('') : `<div class="muted small" style="padding:10px 2px">Chạm vào món bên ${matchMedia('(min-width:900px)').matches ? 'trái' : 'dưới'} để thêm.</div>`}
     ${b && b.items?.length ? `<div class="cp-sec"><span>Đã gửi bếp</span><span>${sent.count} món</span></div>
         ${rounds(b).map(r => `<div class="round"><div class="round-h"><span>Lần ${r.round} · ${fmtTime(r.at)}</span><span>${esc(r.by || '')}</span></div>
-          ${r.items.map(it => `<div class="sline ${it.void ? 'void' : ''}"><span class="sq">${it.qty}</span><span class="sn">${esc(it.name)}${it.note ? `<small>${esc(it.note)}</small>` : ''}${it.void ? `<small>Đã hủy: ${esc(it.voidReason || '')}</small>` : ''}</span><span class="sm">${money(it.qty * it.price)}</span>${store.user.role === 'cashier' && !it.void ? `<button class="icon-btn sm danger" data-act="voidsent" data-id="${it.id}" aria-label="Hủy món">${icon('x')}</button>` : ''}</div>`).join('')}
+          ${r.items.map(it => `<div class="sline ${it.void ? 'void' : ''}">
+            ${it.void ? `<span class="sq">${it.qty}</span>` : `<div class="qty bill-qty"><button data-act="decSent" data-id="${it.id}" aria-label="Bớt một ${esc(it.name)}">${icon('minus')}</button><span>${it.qty}</span><button data-act="incSent" data-id="${it.id}" aria-label="Thêm một ${esc(it.name)}">${icon('plus')}</button></div>`}
+            <span class="sn">${esc(it.name)}${it.note ? `<small>${esc(it.note)}</small>` : ''}${it.void ? `<small>Đã hủy: ${esc(it.voidReason || '')}</small>` : ''}</span><span class="sm">${money(it.qty * it.price)}</span>${store.user.role === 'cashier' && !it.void ? `<button class="icon-btn sm danger" data-act="voidsent" data-id="${it.id}" aria-label="Hủy món">${icon('x')}</button>` : ''}
+          </div>`).join('')}
         </div>`).join('')}` : ''}
     </div>
     <div class="cp-foot">
@@ -299,6 +302,26 @@ async function voidSent(itemId) {
   } catch (e) { toast(e.message || 'Hủy món thất bại', 'err'); }
 }
 
+async function adjustSentQty(itemId, delta) {
+  const b = billOfTable(tableById(tableId));
+  const it = b?.items?.find(item => item.id === itemId);
+  if (!b || !it || it.void) return;
+  const at = Date.now();
+  try {
+    if (delta > 0) {
+      await increaseBillItem(b.id, it.id);
+      deliver('kitchen', kitchenText({ tableName: b.tableName, round: (b.rounds || 0) + 1, items: [{ ...it, qty: 1 }], by: store.user.name, at }), { title: `Gọi thêm · ${it.name}` });
+      toast(`Đã thêm 1 ${it.name}`);
+    } else {
+      const reason = 'Điều chỉnh số lượng trên bill';
+      await voidItem(b.id, it.id, 1, reason, store.user.name);
+      deliver('kitchen', kitchenText({ tableName: b.tableName, items: [{ ...it, qty: 1 }], by: store.user.name, at, cancel: true, reason }), { title: `Báo bếp giảm món · ${it.name}` });
+      toast(`Đã giảm 1 ${it.name}`);
+    }
+  } catch (e) { toast(e.message || 'Không thể cập nhật số lượng món', 'err'); }
+  renderCart();
+}
+
 async function editNote(i) {
   const c = cart[i];
   const v = await promptBox({ title: `Ghi chú · ${c.name}`, value: c.note, placeholder: 'VD: ít cay, không hành…', chips: store.settings.noteChips || [] });
@@ -354,6 +377,8 @@ export default {
         case 'move': move(); break;
         case 'merge': merge(); break;
         case 'voidsent': voidSent(t.dataset.id); break;
+        case 'incSent': adjustSentQty(t.dataset.id, 1); break;
+        case 'decSent': adjustSentQty(t.dataset.id, -1); break;
         case 'opencart': openOrderReceipt(); break;
         case 'openCartSheet': setCartOpen(true); break;
         case 'closecart': setCartOpen(false); break;

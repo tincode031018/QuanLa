@@ -191,8 +191,15 @@ async function createFirebase(cfg) {
     newId: () => fs.doc(colRef('bills')).id,
     isAuthed: () => !!auth.currentUser,
     authRole: emailRole,
-    async signIn(role, pin) {
-      try { await authM.signInWithEmailAndPassword(auth, ACCOUNTS[role], pin); return true; }
+    async signIn(role, pin, remember = false) {
+      try { await authM.setPersistence(auth, remember ? authM.browserLocalPersistence : authM.browserSessionPersistence); }
+      catch {
+        throw new Error('Không thể thiết lập phiên đăng nhập trên trình duyệt này. Hãy thử lại hoặc dùng trình duyệt khác.');
+      }
+      try {
+        await authM.signInWithEmailAndPassword(auth, ACCOUNTS[role], pin);
+        return true;
+      }
       catch (e) {
         if (/network/i.test(e.code || '')) throw new Error('Không có mạng – cần Internet để đăng nhập');
         throw new Error('Mã PIN không đúng');

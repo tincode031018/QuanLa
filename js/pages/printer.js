@@ -2,7 +2,7 @@ import { db } from '../db.js';
 import { store } from '../store.js';
 import { icon, toast, setTitle } from '../ui.js';
 import { esc } from '../utils.js';
-import { billPrintHTML, printHTML } from '../bill.js?v=1.0.38';
+import { billPrintHTML, printHTML } from '../bill.js?v=1.0.39';
 
 let el, draft;
 
@@ -27,6 +27,7 @@ function render() {
       <div class="card card-pad stack">
         <h3>${icon('receipt')} Nội dung hóa đơn</h3>
         <div class="row-between"><span><b>In mã QR thanh toán</b><div class="xs muted">Hiện QR trên hóa đơn chuyển khoản</div></span><label class="switch"><input type="checkbox" data-k="showQR" ${p.showQR ? 'checked' : ''}><span></span></label></div>
+        <div class="row-between"><span><b>Hiện dòng tạm tính trên bill in</b><div class="xs muted">Bật/tắt dòng tạm tính trên phiếu tính tiền và hóa đơn</div></span><label class="switch"><input type="checkbox" data-k="showSubtotal" ${p.showSubtotal !== false ? 'checked' : ''}><span></span></label></div>
         <label class="field"><span>Lời cảm ơn cuối hóa đơn</span><input class="input" data-k="footer" value="${esc(p.footer || '')}"></label>
         <div class="row wrap"><button class="btn" data-a="test">${icon('print')} In thử</button><button class="btn btn-primary" data-a="save">${icon('check')} Lưu cài đặt máy in</button></div>
       </div>

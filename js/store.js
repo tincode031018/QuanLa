@@ -18,7 +18,7 @@ export const DEFAULT_SETTINGS = {
   noteChips: ['Ít cay', 'Không cay', 'Không hành', 'Ít đá', 'Không đá', 'Ít ngọt', 'Mang về', 'Làm nhanh'],
   voidReasons: ['Khách đổi món', 'Khách hủy', 'Bếp hết món', 'Order nhập sai'],
   zalo: { auto: false, workerUrl: '', appKey: '', kitchenChatId: '', billChatId: '', sendKitchen: true, sendBill: true },
-  print: { autoBill: false, autoKitchen: false, footer: 'Cảm ơn quý khách – Hẹn gặp lại!', showQR: true },
+  print: { autoBill: false, autoKitchen: false, footer: 'Cảm ơn quý khách – Hẹn gặp lại!', showQR: true, showSubtotal: true },
   longSitMinutes: 120,
   lockMinutes: 0,
   requirePin: true,

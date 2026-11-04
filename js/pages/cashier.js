@@ -2,8 +2,8 @@
 import { store, emit } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, pickBox, setTitle } from '../ui.js';
 import { esc, money, num, parseMoney, fmtTime, debounce } from '../utils.js';
-import { calc, rounds, adjLabel, vietQR, qrInfo, bankName, billText, billPrintHTML, printHTML, kitchenText, payLabel } from '../bill.js?v=1.0.38';
-import { voidItem, saveAdjust, completePayment, cancelBill, mergeBills, moveTable, reopenBill } from '../actions.js';
+import { calc, rounds, adjLabel, vietQR, qrInfo, bankName, billText, billPrintHTML, printHTML, kitchenText, payLabel } from '../bill.js?v=1.0.39';
+import { voidItem, increaseBillItem, saveAdjust, completePayment, cancelBill, mergeBills, moveTable, reopenBill } from '../actions.js';
 import { deliver, shareSheet, autoReady } from '../zalo.js';
 
 let el, billId, draft, done = false;
@@ -72,7 +72,7 @@ function renderItems() {
   box.innerHTML = rounds(b).map(r => `
     <div class="xs muted bold" style="margin-top:6px">LẦN ${r.round} · ${fmtTime(r.at)} · ${esc(r.by || '')}</div>
     ${r.items.map(it => `<div class="sline ${it.void ? 'void' : ''}">
-      <span class="sq">${it.qty}</span>
+      ${it.void ? `<span class="sq">${it.qty}</span>` : `<div class="qty bill-qty"><button data-act="decQty" data-id="${it.id}" aria-label="Bớt một ${esc(it.name)}">${icon('minus')}</button><span>${it.qty}</span><button data-act="incQty" data-id="${it.id}" aria-label="Thêm một ${esc(it.name)}">${icon('plus')}</button></div>`}
       <span class="sn"><b style="font-weight:650">${esc(it.name)}</b> <span class="xs muted">× ${num(it.price)}</span>
         ${it.note ? `<small>${esc(it.note)}</small>` : ''}${it.void ? `<small>Hủy: ${esc(it.voidReason || '')} (${esc(it.voidBy || '')})</small>` : ''}</span>
       <span class="sm">${money(it.qty * it.price)}</span>
@@ -188,6 +188,16 @@ async function doVoid(itemId) {
   deliver('kitchen', kitchenText({ tableName: b.tableName, items: [{ ...it, qty: res.q }], by: store.user.name, at: Date.now(), cancel: true, reason: res.r }), { title: 'Báo hủy món cho bếp' });
 }
 
+async function decreaseBillItem(itemId) {
+  const it = bill().items.find(i => i.id === itemId);
+  if (!it || it.void) return;
+  try {
+    await voidItem(billId, itemId, 1, 'Điều chỉnh số lượng trên bill', store.user.name);
+    const b = bill();
+    deliver('kitchen', kitchenText({ tableName: b.tableName, items: [{ ...it, qty: 1 }], by: store.user.name, at: Date.now(), cancel: true, reason: 'Điều chỉnh số lượng trên bill' }), { title: 'Báo bếp giảm món' });
+  } catch (e) { toast(e.message || 'Không thể giảm số lượng', 'err'); }
+}
+
 function payPayload() {
   const c = totals();
   const m = draft.method;
@@ -298,6 +308,8 @@ export default {
       if (ds.m) { draft.method = ds.m; renderMethod(); }
       else switch (ds.act) {
         case 'void': doVoid(ds.id); break;
+        case 'incQty': increaseBillItem(billId, ds.id).catch(e => toast(e.message || 'Không thể tăng số lượng', 'err')); break;
+        case 'decQty': decreaseBillItem(ds.id); break;
         case 'complete': complete(); break;
         case 'more': more(); break;
         case 'printDraft': printHTML(billPrintHTML({ ...bill(), discount: draft.discount, surcharge: draft.surcharge }, { draft: true })); break;

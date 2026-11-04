@@ -148,6 +148,11 @@ function settingsHTML() {
         <label class="field"><span>App Key (APP_KEY trong Worker)</span><input class="input" data-k="zalo.appKey" value="${esc(z.appKey)}" type="password" autocomplete="off"></label>
         <label class="field"><span>ID nhóm Bếp</span><input class="input" data-k="zalo.kitchenChatId" value="${esc(z.kitchenChatId)}" placeholder="Nhắn /id trong nhóm để lấy"></label>
         <label class="field"><span>ID nhóm Hóa đơn (bỏ trống = dùng nhóm Bếp)</span><input class="input" data-k="zalo.billChatId" value="${esc(z.billChatId)}"></label>
+        <div class="divider"></div>
+        <label class="field"><span>Bot Token</span><input class="input" id="zaloBotToken" type="password" autocomplete="new-password" placeholder="Dán token từ Zalo Bot Manager"></label>
+        <label class="field"><span>Khóa quản trị Worker (ADMIN_KEY)</span><input class="input" id="zaloAdminKey" type="password" autocomplete="new-password" placeholder="Nhập ADMIN_KEY đã tạo trong Cloudflare"></label>
+        <div class="xs muted">Bot Token được gửi qua HTTPS và lưu trong Cloudflare KV, không lưu vào Firestore/localStorage. Khóa quản trị chỉ dùng lúc cấu hình, không được lưu.</div>
+        <button class="btn btn-soft" data-a="zaloConfigure">${icon('check')} Lưu Bot Token vào Worker</button>
         <button class="btn btn-soft" data-a="zaloTest">${icon('send')} Gửi tin thử</button>
       </div>
     </div>
@@ -234,6 +239,40 @@ async function onAction(a, t) {
       try { await sendAuto(z.kitchenChatId, `${sdraft.shopName}: kết nối Zalo thành công!`); toast('Đã gửi tin thử – kiểm tra nhóm Zalo'); }
       catch (e) { toast('Gửi lỗi: ' + e.message, 'err', 5000); }
       store.settings.zalo = old; return;
+    }
+    case 'zaloConfigure': {
+      const z = sdraft.zalo;
+      const tokenInput = el.querySelector('#zaloBotToken');
+      const adminInput = el.querySelector('#zaloAdminKey');
+      const botToken = tokenInput?.value.trim();
+      const adminKey = adminInput?.value;
+      if (!z.workerUrl || !botToken || !adminKey) return toast('Nhập Worker URL, Bot Token và khóa quản trị Worker', 'warn');
+      let workerUrl;
+      try {
+        const parsed = new URL(z.workerUrl);
+        if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error();
+        workerUrl = parsed.href.replace(/\/+$/, '');
+      } catch { return toast('Worker URL phải là địa chỉ HTTPS hợp lệ', 'warn'); }
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      try {
+        const res = await fetch(workerUrl + '/configure', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+          body: JSON.stringify({ bot_token: botToken }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) throw new Error(data.error || `HTTP ${res.status}`);
+        toast('Đã lưu Bot Token trong Worker. Nhấn “Lưu cài đặt” để lưu App Key và ID nhóm.');
+      } catch (e) {
+        toast(`Không thể cấu hình Worker: ${e.message || 'lỗi kết nối'}`, 'err', 5000);
+      } finally {
+        clearTimeout(timeout);
+        tokenInput.value = '';
+        adminInput.value = '';
+      }
+      return;
     }
     case 'saveSettings': {
       const s = clone(sdraft);

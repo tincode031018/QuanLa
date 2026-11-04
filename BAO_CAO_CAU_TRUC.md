@@ -1,7 +1,7 @@
 # 📋 BÁO CÁO CẤU TRÚC – WEBAPP QUẢN LÝ QUÁN ĂN
 
-> Phiên bản: v0.1 (bản nháp để duyệt) · Ngày: 21/10/2026
-> Trạng thái: **CHƯA CODE** – chờ anh/chị duyệt cấu trúc và trả lời mục 13
+> Tài liệu thiết kế ban đầu (21/10/2026), lưu để tham khảo lịch sử; không phản ánh đầy đủ hiện trạng ứng dụng.
+> Trạng thái: **ĐÃ TRIỂN KHAI VÀ TIẾP TỤC CẬP NHẬT**. Hướng dẫn hiện trạng nằm trong `README.md`; khi có khác biệt, ưu tiên mã nguồn.
 
 ---
 
@@ -98,7 +98,7 @@
 | Mở bàn, gọi món, thêm món | ✅ | ✅ |
 | Ghi chú món (ít cay, không hành…) | ✅ | ✅ |
 | Sửa/xóa món **chưa gửi** | ✅ | ✅ |
-| Xóa/giảm món **đã gửi** | ❌ | ✅ (bắt buộc ghi lý do) |
+| Xem đơn đang phục vụ, hủy món **đã gửi** | ✅ (bắt buộc ghi lý do) | ✅ (bắt buộc ghi lý do) |
 | Yêu cầu tính tiền | ✅ | ✅ |
 | Chuyển bàn / gộp bàn / tách bill | ✅ chuyển bàn | ✅ tất cả |
 | Xem giá & tổng tiền tạm tính | ✅ | ✅ |
@@ -301,7 +301,7 @@ shops/{shopId}
 1. Chủ quán tạo bot trong Mini App **Zalo Bot Creator** → lấy **Bot Token**.
 2. Thêm bot vào nhóm Zalo của quán (trưởng nhóm xác nhận).
 3. Trong nhóm, nhắc tên bot (@bot) → hệ thống ghi nhận **ID nhóm** (`chat.id`).
-4. Dán Token vào Cài đặt → Token được lưu ở **Cloudflare Worker** (không lộ ra ngoài trang web).
+4. Trong **Quản lý → Cài đặt → Gửi nhóm Zalo**, nhập Worker URL, Bot Token và `ADMIN_KEY`; bấm **Lưu Bot Token vào Worker**. Token được gửi qua HTTPS và lưu ở Cloudflare KV binding `ZALO_CONFIG`, không lưu trong Firestore/localStorage.
 5. Mỗi lần chốt bill → app gọi Worker → Worker gửi tin vào nhóm.
 
 *Giới hạn: mỗi tin tối đa 2.000 ký tự (bill dài sẽ tự tách thành nhiều tin).*

@@ -162,6 +162,9 @@ export function billPrintHTML(bill, { draft = false } = {}) {
   <table class="r-tb bill-items"><thead><tr><th>STT</th><th>Tên món ăn</th><th>Số lượng</th><th>Thành tiền</th></tr></thead><tbody>
   ${groupItems(c.items).map((it, index) => `<tr><td class="q">${index + 1}</td><td><b>${esc(it.name)}</b></td><td class="q">${it.qty}</td><td class="m">${num(it.qty * it.price)}</td></tr>`).join('')}
   </tbody></table>
+  ${s.print?.showSubtotal !== false ? `<div class="r-row"><span>Tạm tính</span><span>${money(c.subtotal)}</span></div>` : ''}
+  ${c.discountAmt ? `<div class="r-row"><span>${esc(adjLabel(bill.discount, 'Giảm giá'))}</span><span>-${money(c.discountAmt)}</span></div>` : ''}
+  ${c.surchargeAmt ? `<div class="r-row"><span>${esc(adjLabel(bill.surcharge, 'Phụ thu'))}</span><span>+${money(c.surchargeAmt)}</span></div>` : ''}
   <div class="r-row r-total"><span>TỔNG CỘNG</span><span>${money(c.total)}</span></div>
   `;
 }

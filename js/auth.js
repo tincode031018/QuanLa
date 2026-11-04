@@ -16,8 +16,8 @@ export function restore() {
   localStorage.setItem(KEY, JSON.stringify(session));
   return session;
 }
-export async function verifyPin(role, pin) {
-  await db.signIn(role, pin);
+export async function verifyPin(role, pin, remember = false) {
+  await db.signIn(role, pin, remember);
   store.user = { role, name: ROLE_NAME[role] || role, at: Date.now() };
   localStorage.setItem(KEY, JSON.stringify(store.user));
   startSync();

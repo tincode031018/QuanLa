@@ -125,6 +125,25 @@ export async function voidItem(billId, itemId, qty, reason, by) {
   }, async () => db.update('bills', billId, { items: apply(store.bills[billId]), updatedAt: Date.now() }));
 }
 
+/** Tăng số lượng trực tiếp trên bill đang hoạt động (thu ngân). */
+export async function increaseBillItem(billId, itemId) {
+  const apply = bill => {
+    if (!bill || !ACTIVE.includes(bill.status)) throw new Error('Bill không còn hoạt động');
+    let found = false;
+    const items = (bill.items || []).map(it => {
+      if (it.id !== itemId || it.void) return it;
+      found = true;
+      return { ...it, qty: (Number(it.qty) || 0) + 1 };
+    });
+    if (!found) throw new Error('Món không còn trên bill');
+    return items;
+  };
+  await safeTxn(async tx => {
+    const b = await tx.get('bills', billId);
+    tx.update('bills', billId, { items: apply(b), updatedAt: Date.now() });
+  }, async () => db.update('bills', billId, { items: apply(store.bills[billId]), updatedAt: Date.now() }));
+}
+
 /** Lưu giảm giá / phụ thu tạm */
 export const saveAdjust = (billId, discount, surcharge) => db.update('bills', billId, { discount: discount || null, surcharge: surcharge || null });
 
