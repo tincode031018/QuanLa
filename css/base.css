@@ -96,7 +96,7 @@ strong, b { font-weight: 500; letter-spacing: -.08px; }
   html, body { background: #fff !important; }
   body > *:not(#print-area) { display: none !important; }
   #print-area {
-    display: block; width: 80mm; max-width: 100%; margin-inline: auto; padding: 3mm 4mm 6mm; color: #000;
+    display: block; width: var(--print-content-width, 80mm); max-width: 100%; margin-inline: auto; padding: 3mm 4mm 6mm; color: #000;
     font: 12.5px/1.35 "Courier New", Consolas, monospace;
   }
   #print-area * { color: #000 !important; }

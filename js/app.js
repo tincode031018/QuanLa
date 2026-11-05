@@ -16,7 +16,7 @@ import history from './pages/history.js?v=1.0.42';
 import reports from './pages/reports.js?v=1.0.42';
 import admin from './pages/admin.js?v=1.0.45';
 import soldout from './pages/soldout.js?v=1.0.41';
-import printer from './pages/printer.js?v=1.0.42';
+import printer from './pages/printer.js?v=1.0.43';
 import inventory from './pages/inventory.js?v=1.0.48';
 
 const ROUTES = { login, tables, order, orders, bill, history, reports, admin, soldout, printer, inventory };

@@ -193,8 +193,10 @@ export function reportPrintHTML(r, label) {
 
 export async function printHTML(html) {
   const el = document.getElementById('print-area');
-  const paperSize = store.settings.print?.paperSize === 'a4' ? '210mm 297mm' : '80mm auto';
+  const paper = store.settings.print?.paperSize;
+  const paperSize = paper === 'a4' ? '210mm 297mm' : paper === '58mm' ? '58mm auto' : '80mm auto';
   document.documentElement.style.setProperty('--print-page-size', paperSize);
+  document.documentElement.style.setProperty('--print-content-width', paper === '58mm' ? '58mm' : paper === 'a4' ? '100%' : '80mm');
   el.innerHTML = html;
   const imgs = [...el.querySelectorAll('img')];
   await Promise.race([
@@ -203,6 +205,7 @@ export async function printHTML(html) {
   ]);
   window.print();
   document.documentElement.style.removeProperty('--print-page-size');
+  document.documentElement.style.removeProperty('--print-content-width');
 }
 
 /* ---------- ẢNH hóa đơn (vẽ canvas – không cần thư viện) ---------- */

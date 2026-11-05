@@ -2,7 +2,7 @@
 import { store, emit } from '../store.js';
 import { icon, toast, modal, confirmBox, promptBox, pickBox, setTitle } from '../ui.js';
 import { esc, money, num, parseMoney, fmtTime, debounce } from '../utils.js';
-import { calc, rounds, adjLabel, vietQR, qrInfo, bankName, billText, billPrintHTML, printHTML, kitchenText, payLabel } from '../bill.js?v=1.0.39';
+import { calc, rounds, adjLabel, vietQR, qrInfo, bankName, billText, billPrintHTML, printHTML, kitchenText, payLabel } from '../bill.js?v=1.0.40';
 import { voidItem, increaseBillItem, saveAdjust, completePayment, cancelBill, mergeBills, moveTable, reopenBill } from '../actions.js';
 import { deliver, shareSheet, autoReady } from '../zalo.js';
 

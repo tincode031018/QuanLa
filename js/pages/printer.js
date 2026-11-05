@@ -2,7 +2,7 @@ import { db } from '../db.js';
 import { store } from '../store.js';
 import { icon, toast, setTitle } from '../ui.js';
 import { esc } from '../utils.js';
-import { billPrintHTML, printHTML } from '../bill.js?v=1.0.39';
+import { billPrintHTML, printHTML } from '../bill.js?v=1.0.40';
 
 let el, draft;
 
@@ -14,10 +14,20 @@ function render() {
       <div class="card card-pad stack">
         <h3>${icon('receipt')} Khổ giấy</h3>
         <label class="field"><span>Khổ giấy in</span><select class="input" data-k="paperSize">
-          <option value="80mm" ${p.paperSize !== 'a4' ? 'selected' : ''}>80mm · Máy in hóa đơn nhiệt</option>
+          <option value="58mm" ${p.paperSize === '58mm' ? 'selected' : ''}>58mm · Máy in hóa đơn nhỏ</option>
+          <option value="80mm" ${p.paperSize !== 'a4' && p.paperSize !== '58mm' ? 'selected' : ''}>80mm · Máy in hóa đơn nhiệt</option>
           <option value="a4" ${p.paperSize === 'a4' ? 'selected' : ''}>A4 · Máy in văn phòng</option>
         </select></label>
-        <div class="xs muted">Thiết lập này điều chỉnh bản xem trước và kích thước nội dung. Nếu hộp thoại máy in vẫn chọn khổ khác, hãy chọn 80mm trong mục “Khổ giấy” của trình điều khiển máy in.</div>
+        <div class="xs muted">Thiết lập này điều chỉnh kích thước nội dung. Nếu hộp thoại in vẫn chọn khổ khác, hãy chọn đúng khổ giấy trong trình điều khiển máy in.</div>
+      </div>
+      <div class="card card-pad stack">
+        <h3>${icon('print')} Kết nối máy in</h3>
+        <label class="field"><span>Cách kết nối</span><select class="input" data-k="connection">
+          <option value="system" ${p.connection !== 'bluetooth' ? 'selected' : ''}>Theo hộp thoại in của điện thoại</option>
+          <option value="bluetooth" ${p.connection === 'bluetooth' ? 'selected' : ''}>Bluetooth (ghép nối BLE)</option>
+        </select></label>
+        <div class="row wrap"><button class="btn" data-a="pair">Chọn máy Bluetooth</button><span class="small muted" data-printer-name>${esc(p.bluetoothName || 'Chưa chọn máy in')}</span></div>
+        <div class="xs muted">Ghép nối Bluetooth trên web chỉ hoạt động với trình duyệt và máy in BLE tương thích. Nhiều máy in hóa đơn dùng Bluetooth SPP nên không xuất hiện. QuanLa hiện mở hộp thoại in của hệ điều hành; ghép nối ở đây chưa bật in trực tiếp hay tự động qua Bluetooth.</div>
       </div>
       <div class="card card-pad stack">
         <h3>${icon('print')} Tự động in</h3>
@@ -37,12 +47,13 @@ function render() {
 export default {
   async mount(root) {
     el = root;
-    draft = { autoBill: false, autoKitchen: false, showQR: true, footer: '', ...(store.settings.print || {}) };
+    draft = { autoBill: false, autoKitchen: false, showQR: true, footer: '', paperSize: '80mm', connection: 'system', bluetoothName: '', bluetoothDeviceId: '', ...(store.settings.print || {}) };
     setTitle('Máy in');
     render();
     const onChange = e => {
       const t = e.target;
       if (t.dataset.k) draft[t.dataset.k] = t.type === 'checkbox' ? t.checked : t.value;
+      if (t.dataset.k === 'connection') render();
     };
     const onClick = async e => {
       const t = e.target.closest('[data-a]');
@@ -50,10 +61,24 @@ export default {
       if (t.dataset.a === 'save') {
         await db.update('settings', 'main', { print: { ...draft } });
         toast('Đã lưu cài đặt máy in');
+      } else if (t.dataset.a === 'pair') {
+        if (!navigator.bluetooth?.requestDevice) {
+          toast('Trình duyệt này không hỗ trợ ghép nối Bluetooth BLE.');
+          return;
+        }
+        try {
+          const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+          draft.bluetoothName = device.name || 'Máy in Bluetooth';
+          draft.bluetoothDeviceId = device.id;
+          draft.connection = 'bluetooth';
+          render();
+        } catch (err) {
+          if (err.name !== 'NotFoundError') toast('Không ghép nối được máy in Bluetooth.');
+        }
       } else if (t.dataset.a === 'test') {
         const original = store.settings.print;
         store.settings.print = { ...draft };
-        document.documentElement.style.setProperty('--print-page-size', draft.paperSize === 'a4' ? '210mm 297mm' : '80mm auto');
+        document.documentElement.style.setProperty('--print-page-size', draft.paperSize === 'a4' ? '210mm 297mm' : `${draft.paperSize || '80mm'} auto`);
         try {
           await printHTML(billPrintHTML({ tableName: 'Bàn thử', code: 'IN-THU', openedAt: Date.now() - 1800000, closedAt: Date.now(), closedBy: store.user.name,
             items: [{ menuId: 'test-1', name: 'Món kiểm tra máy in', price: 45000, qty: 1 }], pay: { method: 'cash', received: 50000, cash: 50000 } }));

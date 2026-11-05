@@ -3,7 +3,7 @@ import { db } from '../db.js';
 import { store } from '../store.js';
 import { icon, modal, confirmBox, toast, setTitle } from '../ui.js';
 import { esc, money, num, fmtTime, dayKey, addDays, norm } from '../utils.js';
-import { calc, groupItems, adjLabel, payLabel, billText, billPrintHTML, printHTML } from '../bill.js?v=1.0.39';
+import { calc, groupItems, adjLabel, payLabel, billText, billPrintHTML, printHTML } from '../bill.js?v=1.0.40';
 import { shareSheet } from '../zalo.js';
 
 let el, day = dayKey(), status = 'all', q = '', bills = [], deleting = false;
