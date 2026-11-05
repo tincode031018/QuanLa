@@ -65,9 +65,9 @@
 .dash { display: grid; gap: 16px; }
 .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 12px; }
 .tcard {
-  position: relative; min-height: 138px; padding: 14px 12px 12px; border: 1px solid #e3e9e4; border-radius: 14px; text-align: left;
+  position: relative; min-height: 138px; padding: 14px 12px 12px; border: 1px solid #b8c7bd; border-radius: 14px; text-align: left;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 8px;
-  background: rgba(255,255,255,.6); box-shadow: none;
+  background: #fff; box-shadow: 0 1px 3px rgba(28, 54, 38, .08);
   transition: transform .12s, background .15s, border-color .15s, color .15s;
 }
 .tcard:active { transform: scale(.97); }

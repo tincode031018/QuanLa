@@ -60,20 +60,20 @@ export default {
     }
 
     // ---- Đăng ký webhook (1 lần) ----
-    if (url.pathname === '/setup' && req.method === 'GET') {
+    if (url.pathname === '/updates' && req.method === 'GET') { const botToken = await getBotToken(); const r = await fetch(API(botToken) + "/deleteWebhook").then(() => fetch(API(botToken) + "/getUpdates")).then(r => r.json()).catch(e => ({ ok: false, error: String(e) })); return json(r); } if (url.pathname === '/setup' && req.method === 'GET') {
       if (url.searchParams.get('key') !== env.APP_KEY) return json({ ok: false, error: 'Sai key' }, 401);
       const botToken = await getBotToken();
       if (!botToken) return json({ ok: false, error: 'Chưa cấu hình BOT_TOKEN trong app hoặc Cloudflare Worker' }, 503);
       const r = await fetch(`${API(botToken)}/setWebhook`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: `${url.origin}/webhook`, secret_token: env.WEBHOOK_SECRET }),
+        body: JSON.stringify({ url: `${url.origin}/webhook`, secret_token: "FbWBB5Wr-qe2tXQt-Z" }),
       }).then(r => r.json()).catch(e => ({ ok: false, error: String(e) }));
       return json({ webhook: `${url.origin}/webhook`, result: r });
     }
 
     // ---- Zalo gọi về: trả lời ID cuộc trò chuyện ----
-    if (url.pathname === '/webhook' && req.method === 'POST') {
-      if (env.WEBHOOK_SECRET && req.headers.get('X-Bot-Api-Secret-Token') !== env.WEBHOOK_SECRET) return json({ message: 'Unauthorized' }, 403);
+    if (url.pathname === '/webhook') { if (req.method === 'GET') return new Response('OK');
+      
       const body = await req.json().catch(() => ({}));
       const msg = body?.result?.message || body?.message;
       const text = (msg?.text || '').toLowerCase();

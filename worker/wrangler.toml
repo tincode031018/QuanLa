@@ -9,4 +9,4 @@ binding = "ZALO_CONFIG"
 id = "cdefc1769b45453db7008cf357c6855d"
 
 [vars]
-ALLOW_ORIGIN = "http://127.0.0.1:8080"
+ALLOW_ORIGIN = "*"

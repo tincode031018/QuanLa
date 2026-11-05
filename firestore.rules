@@ -43,7 +43,7 @@ service cloud.firestore {
           && onlyKeys(['items', 'rounds', 'staff', 'status', 'requestedAt', 'requestedBy', 'updatedAt', 'lastBy', 'tableId', 'tableName'])
           && request.resource.data.items.size() >= resource.data.items.size()
         );
-        allow delete: if false;
+        allow delete: if isCashier() && resource.data.status in ['paid', 'cancelled', 'merged'];
       }
     }
   }

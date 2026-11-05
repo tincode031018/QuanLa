@@ -1,17 +1,25 @@
 // ===== C03 – Lịch sử bill =====
 import { db } from '../db.js';
 import { store } from '../store.js';
-import { icon, modal, setTitle } from '../ui.js';
+import { icon, modal, confirmBox, toast, setTitle } from '../ui.js';
 import { esc, money, num, fmtTime, dayKey, addDays, norm } from '../utils.js';
 import { calc, groupItems, adjLabel, payLabel, billText, billPrintHTML, printHTML } from '../bill.js?v=1.0.39';
 import { shareSheet } from '../zalo.js';
 
-let el, day = dayKey(), status = 'all', q = '', bills = [];
+let el, day = dayKey(), status = 'all', q = '', bills = [], deleting = false;
 const ST = { paid: 'Đã thanh toán', cancelled: 'Đã hủy', merged: 'Đã gộp' };
+const CLOSED_STATUSES = new Set(['paid', 'cancelled', 'merged']);
 
 async function load() {
-  el.querySelector('#hlist').innerHTML = '<div class="empty">Đang tải…</div>';
-  bills = (await db.list('bills', [['day', '==', day]])).sort((a, b) => (b.closedAt || 0) - (a.closedAt || 0));
+  const targetDay = day;
+  const listEl = el?.querySelector('#hlist');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="empty">Đang tải…</div>';
+  const deleteButton = el.querySelector('[data-act="delete-day"]');
+  if (deleteButton) deleteButton.disabled = true;
+  const loaded = await db.list('bills', [['day', '==', targetDay]]);
+  if (targetDay !== day || !el?.querySelector('#hlist')) return;
+  bills = loaded.sort((a, b) => (b.closedAt || 0) - (a.closedAt || 0));
   renderList();
 }
 
@@ -19,6 +27,8 @@ function renderList() {
   const nq = norm(q);
   const list = bills.filter(b => (status === 'all' || b.status === status) && (!nq || norm(`${b.code} ${b.tableName}`).includes(nq)));
   const paid = bills.filter(b => b.status === 'paid');
+  const deleteButton = el.querySelector('[data-act="delete-day"]');
+  if (deleteButton) deleteButton.disabled = deleting || !bills.some(b => CLOSED_STATUSES.has(b.status));
   el.querySelector('#hsum').innerHTML = `<b>${paid.length}</b> bill · <b class="text-brand">${money(paid.reduce((s, b) => s + (b.total || 0), 0))}</b>`;
   el.querySelector('#hlist').innerHTML = list.length ? `<div class="card">${list.map(b => `
     <div class="hist-item" data-id="${b.id}">
@@ -53,11 +63,56 @@ export function showBill(b) {
   });
 }
 
+async function deleteDayBills() {
+  if (deleting) return;
+  const targetDay = day;
+  deleting = true;
+  const button = el.querySelector('[data-act="delete-day"]');
+  if (button) button.disabled = true;
+  try {
+    const dayBills = (await db.list('bills', [['day', '==', targetDay]])).sort((a, b) => (b.closedAt || 0) - (a.closedAt || 0));
+    const closedBills = dayBills.filter(b => CLOSED_STATUSES.has(b.status));
+    if (!closedBills.length) {
+      if (targetDay === day && el.querySelector('#hlist')) { bills = dayBills; renderList(); }
+      toast('Ngày này không có bill đã đóng để xóa', 'info');
+      return;
+    }
+    const confirmed = await confirmBox(
+      `Xóa <b>${closedBills.length}</b> bill đã đóng ngày <b>${esc(targetDay)}</b>? Thao tác không thể khôi phục. Bill đang phục vụ hoặc chờ thanh toán sẽ được giữ lại.`,
+      { title: 'Xóa dữ liệu bill', okText: 'Xóa bill', danger: true },
+    );
+    if (!confirmed) {
+      if (targetDay === day && el.querySelector('#hlist')) { bills = dayBills; renderList(); }
+      return;
+    }
+    await db.removeMany('bills', closedBills.map(b => b.id));
+    if (targetDay === day && el.querySelector('#hlist')) {
+      const deleted = new Set(closedBills.map(b => b.id));
+      bills = dayBills.filter(b => !deleted.has(b.id));
+      renderList();
+    }
+    toast(`Đã xóa ${closedBills.length} bill ngày ${targetDay}`);
+  } catch (error) {
+    console.error(error);
+    if (targetDay === day && el.querySelector('#hlist')) {
+      try { await load(); } catch (refreshError) { console.error(refreshError); }
+    }
+    toast(/permission/i.test(error?.code || '')
+      ? 'Không có quyền xóa bill. Hãy triển khai Firestore Rules mới.'
+      : 'Không thể xóa bill. Kiểm tra mạng/quyền và thử lại.', 'err');
+  } finally {
+    deleting = false;
+    const currentButton = el?.querySelector('[data-act="delete-day"]');
+    if (currentButton) currentButton.disabled = !bills.some(b => CLOSED_STATUSES.has(b.status));
+  }
+}
+
 export default {
   async mount(root) {
     el = root; setTitle('Lịch sử bill'); q = '';
     el.innerHTML = `
-      <div class="page-head"><h1>Lịch sử bill</h1><div class="small" id="hsum"></div></div>
+      <div class="page-head"><div><h1>Lịch sử bill</h1><div class="small" id="hsum"></div></div>
+        <button class="btn btn-danger-soft btn-sm" data-act="delete-day" disabled>${icon('trash')} Xóa dữ liệu ngày này</button></div>
       <div class="stack mb">
         <div class="row">
           <button class="icon-btn" data-d="-1" aria-label="Ngày trước">${icon('back')}</button>
@@ -70,8 +125,9 @@ export default {
       </div>
       <div id="hlist"></div>`;
     const onClick = e => {
-      const t = e.target.closest('[data-d],[data-s],[data-id]');
+      const t = e.target.closest('[data-d],[data-s],[data-id],[data-act]');
       if (!t) return;
+      if (t.dataset.act === 'delete-day') { deleteDayBills(); return; }
       if (t.dataset.d !== undefined) { day = +t.dataset.d === 0 ? dayKey() : addDays(day, +t.dataset.d); el.querySelector('#day').value = day; load(); }
       else if (t.dataset.s) { status = t.dataset.s; el.querySelectorAll('[data-s]').forEach(c => c.classList.toggle('active', c === t)); renderList(); }
       else showBill(bills.find(b => b.id === t.dataset.id));

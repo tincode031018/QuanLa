@@ -62,6 +62,8 @@ Thu ngân cần đăng nhập Firebase thành công để khởi tạo/cập nh�
 
 Có thể chạy bằng static hosting hoặc Firebase Hosting. Repository đã có `firebase.json`; nếu triển khai bằng Firebase CLI, liên kết đúng Firebase project trước khi chạy `firebase deploy`. Hosting phải phục vụ nguyên cấu trúc thư mục để các đường dẫn tương đối trong app tiếp tục hoạt động.
 
+Thu ngân có thể xem lịch sử bill theo ngày và xóa các bill đã đóng của ngày đang chọn. Thao tác xóa cần triển khai Firestore Rules từ repository; bill đang phục vụ hoặc chờ thanh toán không bị xóa.
+
 ---
 
 ## 4. Zalo Bot: hiện trạng và điểm cần kiểm tra

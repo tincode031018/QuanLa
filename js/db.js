@@ -118,6 +118,11 @@ function createLocal() {
     async set(c, id, d) { writeSet(c, id, d); persist(new Set([c])); },
     async update(c, id, p) { writeUpdate(c, id, p); persist(new Set([c])); },
     async remove(c, id) { delete col(c)[id]; persist(new Set([c])); },
+    async removeMany(c, ids) {
+      if (!ids.length) return;
+      ids.forEach(id => delete col(c)[id]);
+      persist(new Set([c]));
+    },
     async batch(ops) { // [['set'|'update'|'remove', col, id, data]]
       const cols = new Set();
       for (const [op, c, id, d] of ops) { cols.add(c); op === 'set' ? writeSet(c, id, d) : op === 'update' ? writeUpdate(c, id, d) : delete col(c)[id]; }
@@ -218,6 +223,13 @@ async function createFirebase(cfg) {
     set: (c, id, d) => fire(fs.setDoc(docRef(c, id), convSet(d))),
     update: (c, id, p) => fire(fs.updateDoc(docRef(c, id), conv(p))),
     remove: (c, id) => fire(fs.deleteDoc(docRef(c, id))),
+    async removeMany(c, ids) {
+      for (let i = 0; i < ids.length; i += 500) {
+        const batch = fs.writeBatch(fdb);
+        ids.slice(i, i + 500).forEach(id => batch.delete(docRef(c, id)));
+        await batch.commit();
+      }
+    },
     batch(ops) {
       const b = fs.writeBatch(fdb);
       for (const [op, c, id, d] of ops) {
